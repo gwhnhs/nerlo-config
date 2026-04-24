@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "builders": {
+    "Lovable": {
+      "nativeCapabilities": ["database", "auth", "hosting", "file storage"],
+      "externalServices": {
+        "payments": "Lovable can wire up Stripe for that, but you'll need your own free Stripe account before you start building.",
+        "sms": "Sending texts requires Twilio, which needs its own account. Free to start.",
+        "email": "Lovable doesn't send emails on its own. You'll need a free Resend account for that."
+      }
+    },
+    "Base44": {
+      "nativeCapabilities": ["database", "auth", "hosting", "email", "sms", "payments", "file storage"],
+      "externalServices": {
+        "maps": "Showing a live map requires Google Maps, which needs its own API key. Free to start.",
+        "voice": "That will need ElevenLabs — it's a separate account but straightforward to connect.",
+        "imageGeneration": "Generating images will need an external service like Replicate — separate account required."
+      }
+    },
+    "Bolt": {
+      "nativeCapabilities": ["database", "auth", "hosting", "file storage"],
+      "externalServices": {
+        "payments": "Bolt can wire up Stripe for that, but you'll need your own free Stripe account before you start building.",
+        "sms": "Sending texts requires Twilio, which needs its own account. Free to start.",
+        "email": "Bolt doesn't send emails natively. You'll need a free Resend account for that."
+      }
+    },
+    "Replit": {
+      "nativeCapabilities": ["database", "auth", "hosting"],
+      "externalServices": {
+        "payments": "Replit can wire up Stripe for that, but you'll need your own free Stripe account before you start building.",
+        "sms": "Sending texts requires Twilio, which needs its own account. Free to start.",
+        "email": "Replit doesn't send emails natively. You'll need a free SendGrid account for that."
+      }
+    },
+    "v0": {
+      "nativeCapabilities": ["frontend"],
+      "externalServices": {
+        "database": "v0 handles the frontend but you'll need Supabase for storing data. Free to start.",
+        "auth": "User accounts need Supabase Auth, which is a free separate account.",
+        "payments": "You'll need your own Stripe account for payments. Free to set up.",
+        "email": "You'll need a free Resend account for emails since v0 doesn't handle that.",
+        "sms": "Sending texts requires Twilio, which needs its own account. Free to start."
+      }
+    },
+    "Cursor": {
+      "nativeCapabilities": [],
+      "externalServices": {
+        "database": "You'll need Supabase for the database. Free account, straightforward to connect.",
+        "auth": "User accounts need Supabase Auth, free separate account.",
+        "payments": "You'll need your own Stripe account for payments.",
+        "email": "You'll need a free Resend account for emails.",
+        "sms": "Sending texts requires Twilio, separate account required."
+      }
+    }
+  }
+}
