@@ -4,7 +4,7 @@
     "Lovable": {
       "nativeCapabilities": ["database", "auth", "hosting", "file storage"],
       "externalServices": {
-        "payments": "Lovable can wire up Stripe for that, but you'll need your own free Stripe account before you start building.",
+        "payments": "TEST REMOTE CONFIG — Stripe account needed.",
         "sms": "Sending texts requires Twilio, which needs its own account. Free to start.",
         "email": "Lovable doesn't send emails on its own. You'll need a free Resend account for that."
       }
