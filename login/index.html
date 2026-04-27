@@ -97,29 +97,28 @@
 
   <p class="back"><a href="/">← Back to nerlo.io</a></p>
 
-  <script>
-    window.addEventListener('load', async () => {
-      await window.Clerk.load();
-
-      if (window.Clerk.user) {
-        window.location.href = '/welcome';
-        return;
-      }
-
-      window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
-        appearance: {
-          variables: {
-            colorPrimary: '#8aabdc',
-            colorBackground: '#0d1120',
-            colorText: '#d4daf0',
-            colorInputBackground: '#07090f',
-            colorInputText: '#d4daf0',
-            borderRadius: '10px'
-          }
-        },
-        afterSignInUrl: '/welcome'
-      });
+ <script>
+  window.addEventListener('load', async () => {
+    await window.Clerk.load();
+    if (window.Clerk.user) {
+      window.location.href = '/welcome';
+      return;
+    }
+    window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
+      routing: 'hash',
+      appearance: {
+        variables: {
+          colorPrimary: '#8aabdc',
+          colorBackground: '#0d1120',
+          colorText: '#d4daf0',
+          colorInputBackground: '#07090f',
+          colorInputText: '#d4daf0',
+          borderRadius: '10px'
+        }
+      },
+      afterSignInUrl: '/welcome'
     });
-  </script>
+  });
+</script>
 </body>
 </html>
