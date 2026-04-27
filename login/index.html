@@ -27,6 +27,8 @@
       justify-content: center;
       padding: 2rem;
       font-family: 'DM Sans', sans-serif;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
     .logo {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -72,8 +74,7 @@
       }
       window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
         afterSignInUrl: 'https://nerlo.io/welcome',
-        afterSignUpUrl: 'https://nerlo.io/welcome',
-        appearance: {
+        afterSignUpUrl: 'https://nerlo.io/welcome',        appearance: {
           variables: {
             colorPrimary: '#8aabdc',
             colorBackground: '#111827',
@@ -91,7 +92,7 @@
             },
             socialButtonsBlockButton: {
               backgroundColor: '#8aabdc',
-              border: '1px solid rgba(138,171,220,0.5)',
+              border: 'none',
               color: '#07090f'
             },
             socialButtonsBlockButton__github: {
@@ -109,6 +110,7 @@
           }
         }
       });
+      document.body.style.opacity = '1';
     });
   </script>
 </body>
