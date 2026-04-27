@@ -104,6 +104,25 @@
         await window.Clerk.signOut();
         window.location.href = '/';
       });
+
+      const token = await window.Clerk.session.getToken();
+      if (token == null) return;
+
+      window.postMessage({ type: 'NERLO_PING' }, '*');
+
+      const timeout = setTimeout(() => {
+        window.removeEventListener('message', onPong);
+      }, 3000);
+
+      function onPong(event) {
+        if (event.data && event.data.type === 'NERLO_PONG') {
+          clearTimeout(timeout);
+          window.removeEventListener('message', onPong);
+          window.postMessage({ type: 'NERLO_TOKEN', token: token }, '*');
+        }
+      }
+
+      window.addEventListener('message', onPong);
     });
   </script>
 </body>
