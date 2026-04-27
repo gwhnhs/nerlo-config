@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign in — nerlo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script async crossorigin="anonymous" data-clerk-publishable-key="pk_test_Z2VuZXJvdXMtY2F0ZmlzaC0xMS5jbGVyay5hY2NvdW50cy5kZXYk" src="https://generous-catfish-11.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07090f;
+      --surface: #0d1120;
+      --star: #8aabdc;
+      --cream: #e8edf8;
+      --cream-dim: #8a96b0;
+      --text: #d4daf0;
+      --text-dim: #4a5470;
+      --border: rgba(138,171,220,0.12);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .logo {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-decoration: none;
+      margin-bottom: 2.5rem;
+    }
+    .logo span:first-child { color: var(--star); }
+    .logo span:last-child  { color: var(--cream); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--cream-dim);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    #clerk-sign-in { width: 100%; }
+
+    .back {
+      margin-top: 1.5rem;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .back a {
+      color: var(--star);
+      text-decoration: none;
+    }
+
+    .back a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <a href="/" class="logo"><span>ner</span><span>lo</span></a>
+
+  <div class="card">
+    <h1>Welcome back</h1>
+    <p class="subtitle">Sign in to start building with nerlo.</p>
+    <div id="clerk-sign-in"></div>
+  </div>
+
+  <p class="back"><a href="/">← Back to nerlo.io</a></p>
+
+  <script>
+    window.addEventListener('load', async () => {
+      await window.Clerk.load();
+
+      if (window.Clerk.user) {
+        window.location.href = '/welcome';
+        return;
+      }
+
+      window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
+        appearance: {
+          variables: {
+            colorPrimary: '#8aabdc',
+            colorBackground: '#0d1120',
+            colorText: '#d4daf0',
+            colorInputBackground: '#07090f',
+            colorInputText: '#d4daf0',
+            borderRadius: '10px'
+          }
+        },
+        afterSignInUrl: '/welcome'
+      });
+    });
+  </script>
+</body>
+</html>
