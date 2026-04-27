@@ -2,8 +2,97 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta http-equiv="refresh" content="0; url=https://generous-catfish-11.clerk.accounts.dev/sign-in"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sign in — nerlo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script async crossorigin="anonymous"
+    data-clerk-publishable-key="pk_test_Z2VuZXJvdXMtY2F0ZmlzaC0xMS5jbGVyay5hY2NvdW50cy5kZXYk"
+    src="https://generous-catfish-11.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js">
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #07090f;
+      --star: #8aabdc;
+      --cream: #e8edf8;
+      --cream-dim: #8a96b0;
+      --text-dim: #4a5470;
+    }
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .logo {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      text-decoration: none;
+      margin-bottom: 1.5rem;
+      display: block;
+    }
+    .logo span:first-child { color: var(--star); }
+    .logo span:last-child  { color: var(--cream); }
+    .tagline {
+      font-size: 0.82rem;
+      color: var(--cream-dim);
+      margin-bottom: 2rem;
+    }
+    #clerk-sign-in {
+      width: 100%;
+      max-width: 400px;
+    }
+    .back {
+      margin-top: 1.5rem;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+    .back a { color: var(--star); text-decoration: none; }
+    .back a:hover { text-decoration: underline; }
+  </style>
 </head>
-<body></body>
+<body>
+  <a href="/" class="logo"><span>ner</span><span>lo</span></a>
+  <p class="tagline">Your idea, finally understood.</p>
+  <div id="clerk-sign-in"></div>
+  <p class="back"><a href="/">← Back to nerlo.io</a></p>
+
+  <script>
+    window.addEventListener('load', async () => {
+      await window.Clerk.load();
+      if (window.Clerk.user) {
+        window.location.href = '/welcome';
+        return;
+      }
+      window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
+        afterSignInUrl: 'https://nerlo.io/welcome',
+        afterSignUpUrl: 'https://nerlo.io/welcome',
+        appearance: {
+          variables: {
+            colorPrimary: '#8aabdc',
+            colorBackground: '#111827',
+            colorText: '#d4daf0',
+            colorInputBackground: '#07090f',
+            colorInputText: '#d4daf0',
+            borderRadius: '10px'
+          },
+          elements: {
+            rootBox: { width: '100%' },
+            card: {
+              boxShadow: 'none',
+              border: '1px solid rgba(138,171,220,0.12)',
+              width: '100%'
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
 </html>
