@@ -1,11 +1,4 @@
-async function getClerkUserId(token) {
-  const res = await fetch('https://generous-catfish-11.clerk.accounts.dev/oauth/userinfo', {
-    headers: { Authorization: 'Bearer ' + token }
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.sub || null;
-}
+import { verifyToken } from '@clerk/backend';
 
 export default async function handler(req, res) {
   // CORS headers — allow requests from the extension
@@ -21,8 +14,9 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized', code: 'missing_token' });
   }
   const token = authHeader.slice(7);
-  const userId = await getClerkUserId(token);
-  if (userId === null) {
+  try {
+    await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
+  } catch {
     return res.status(401).json({ error: 'Unauthorized', code: 'invalid_token' });
   }
 
