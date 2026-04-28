@@ -1,4 +1,11 @@
-import { verifyToken } from '@clerk/backend';
+async function getClerkUserId(token) {
+  const res = await fetch('https://generous-catfish-11.clerk.accounts.dev/oauth/userinfo', {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.sub || null;
+}
 
 const LIMIT = 3;
 
@@ -15,11 +22,8 @@ export default async function handler(req, res) {
   }
   const token = authHeader.slice(7);
 
-  let userId;
-  try {
-    const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
-    userId = payload.sub;
-  } catch {
+  const userId = await getClerkUserId(token);
+  if (userId === null) {
     return res.status(401).json({ error: 'Unauthorized', code: 'invalid_token' });
   }
 
