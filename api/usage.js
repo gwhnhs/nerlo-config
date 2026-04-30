@@ -1,10 +1,15 @@
+import { verifyToken } from '@clerk/backend';
+
 async function getClerkUserId(token) {
-  const res = await fetch('https://generous-catfish-11.clerk.accounts.dev/oauth/userinfo', {
-    headers: { Authorization: 'Bearer ' + token }
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.sub || null;
+  try {
+    const payload = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+      authorizedParties: ['chrome-extension://']
+    });
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
 }
 
 const LIMIT = 3;

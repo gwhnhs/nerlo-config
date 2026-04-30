@@ -105,7 +105,7 @@
         window.location.href = '/';
       });
 
-      const token = await window.Clerk.session.getToken();
+      const token = await window.Clerk.session.getToken({ template: 'nerlo' });
       if (token == null) return;
 
       window.postMessage({ type: 'NERLO_PING' }, '*');
