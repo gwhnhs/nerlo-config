@@ -14,7 +14,7 @@ async function getClerkUserId(token) {
   }
 }
 
-const LIMIT = 3;
+const LIMIT = 10;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
