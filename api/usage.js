@@ -4,10 +4,12 @@ async function getClerkUserId(token) {
   try {
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY,
-      authorizedParties: ['chrome-extension://']
+      skipJwtSignatureCheck: false,
+      clockSkewInMs: 5000
     });
     return payload.sub || null;
-  } catch {
+  } catch (err) {
+    console.error('Token verification failed:', err.message);
     return null;
   }
 }
