@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git *)"
+      "Bash(git *)",
+      "PowerShell(Get-ChildItem C:\\\\Users\\\\hardo\\\\Downloads | Where-Object { $_.PSIsContainer } | Select-Object Name)"
     ]
   }
 }
