@@ -535,8 +535,12 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   const copyBriefBtn = document.getElementById('copy-brief');
 
   function scrollToBottom() {
+    const el = document.getElementById('messages');
+    if (!el) return;
     requestAnimationFrame(() => {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight;
+      });
     });
   }
 
