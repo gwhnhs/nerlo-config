@@ -432,11 +432,7 @@
       <h2 class="brief-heading">Your brief is ready.</h2>
       <pre class="brief-text" id="brief-text"></pre>
       <div class="brief-actions">
-        <button class="btn btn-primary" id="copy-brief">Copy Brief</button>
-      </div>
-      <div class="brief-builders">
-        <div class="brief-builders-label">Choose where to build:</div>
-        <div class="brief-builders-placeholder">Builder selection coming soon</div>
+        <button class="btn btn-primary" id="build-btn">Build this in Lovable →</button>
       </div>
     </div>
   </div>
@@ -542,7 +538,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   const inputArea = document.getElementById('input-area');
   const briefPanel = document.getElementById('brief-panel');
   const briefTextEl = document.getElementById('brief-text');
-  const copyBriefBtn = document.getElementById('copy-brief');
 
   function scrollToBottom() {
     const el = document.getElementById('messages');
@@ -766,16 +761,11 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     briefPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  copyBriefBtn.addEventListener('click', async () => {
+  document.getElementById('build-btn').addEventListener('click', () => {
     if (!briefContent) return;
-    try {
-      await navigator.clipboard.writeText(briefContent);
-      const orig = copyBriefBtn.textContent;
-      copyBriefBtn.textContent = 'Copied';
-      setTimeout(() => { copyBriefBtn.textContent = orig; }, 1600);
-    } catch {
-      copyBriefBtn.textContent = 'Copy failed';
-    }
+    const encoded = encodeURIComponent(briefContent);
+    const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
+    window.open(url, '_blank');
   });
 
   // Handle assistant response (shared by first and subsequent messages)
