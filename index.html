@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>nerlo — your AI sidekick</title>
-  <meta name="description" content="You have the idea. nerlo makes sure the AI builder actually gets it. No coding knowledge needed."/>
+  <title>nerlo</title>
+  <meta name="description" content="Tell nerlo what you want to build. Get a precise brief any AI builder can build."/>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,9 +22,7 @@
       --border-strong: rgba(138,171,220,0.2);
     }
 
-    h1, h2, h3, p, .section-sub, .hero-sub, .step p, .persona p, .waitlist-note, .footer-note {
-      text-wrap: balance;
-    }
+    html, body { height: 100%; }
 
     body {
       background: var(--bg);
@@ -39,7 +37,7 @@
       position: fixed;
       top: 0; left: 0; right: 0;
       z-index: 100;
-      padding: 1.25rem 2rem;
+      padding: 1rem 1.75rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -50,7 +48,7 @@
 
     .nav-logo {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
       letter-spacing: -0.03em;
       text-decoration: none;
@@ -58,552 +56,338 @@
     .nav-logo span:first-child { color: var(--star); }
     .nav-logo span:last-child  { color: var(--cream); }
 
-    .nav-cta {
-      padding: 0.5rem 1.25rem;
-      background: var(--star);
-      border: none;
-      border-radius: 100px;
-      color: var(--bg);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .nav-cta:hover { background: var(--cream); }
-
-    /* Hero */
-    .hero {
-      position: relative;
-      min-height: 100vh;
+    /* Chat layout */
+    .chat {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 9rem 1.5rem 6rem;
-      overflow: hidden;
+      min-height: 100dvh;
+      padding-top: 4rem;
     }
 
-    .hero-glow {
-      position: absolute;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 900px;
-      height: 600px;
-      background: radial-gradient(ellipse at center, rgba(138,171,220,0.055) 0%, transparent 65%);
-      pointer-events: none;
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem 1.25rem 9rem;
+      scroll-behavior: smooth;
     }
 
-    .hero-eyebrow {
+    .messages-inner {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    /* Bubbles */
+    .bubble {
+      max-width: 86%;
+      padding: 0.85rem 1.05rem;
+      border-radius: 16px;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      opacity: 0;
+      transform: translateY(6px);
+      animation: bubbleIn 0.3s ease forwards;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .bubble.nerlo {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 5px;
+      color: var(--text);
+      align-self: flex-start;
+    }
+
+    .bubble.user {
+      background: var(--star-dim);
+      border: 1px solid rgba(138,171,220,0.25);
+      border-bottom-right-radius: 5px;
+      color: var(--cream);
+      align-self: flex-end;
+    }
+
+    @keyframes bubbleIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Typing indicator */
+    .typing {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      border-bottom-left-radius: 5px;
+      padding: 0.95rem 1.1rem;
       display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      font-size: 0.68rem;
+      gap: 5px;
+      animation: bubbleIn 0.3s ease forwards;
+      opacity: 0;
+    }
+    .typing .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cream-dim);
+      animation: typingDot 1.4s ease-in-out infinite;
+    }
+    .typing .dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing .dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingDot {
+      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+      30%           { opacity: 1;   transform: translateY(-2px); }
+    }
+
+    /* Inline service note */
+    .note {
+      align-self: flex-start;
+      max-width: 86%;
+      background: rgba(138,171,220,0.04);
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--star);
+      border-radius: 10px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      color: var(--cream-dim);
+      line-height: 1.55;
+      opacity: 0;
+      animation: bubbleIn 0.3s ease forwards;
+    }
+    .note .note-name {
+      color: var(--star);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .note a {
+      color: var(--star);
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(138,171,220,0.4);
+    }
+    .note a:hover { color: var(--cream); }
+
+    /* Cards (market + services) */
+    .card {
+      align-self: stretch;
+      background: var(--surface);
+      border: 1px solid var(--star);
+      border-radius: 14px;
+      padding: 1.15rem 1.25rem;
+      opacity: 0;
+      animation: bubbleIn 0.35s ease forwards;
+    }
+    .card-label {
+      font-size: 0.62rem;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: var(--star);
-      background: rgba(138,171,220,0.07);
-      border: 1px solid rgba(138,171,220,0.18);
-      border-radius: 100px;
-      padding: 0.35rem 0.9rem;
-      margin-bottom: 2.25rem;
-      animation: fadeUp 0.5s ease forwards;
-      opacity: 0;
+      margin-bottom: 0.6rem;
     }
-
-    .hero-eyebrow::before {
-      content: '';
-      width: 5px; height: 5px;
-      background: var(--star);
-      border-radius: 50%;
-      animation: pulse 2s ease infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.35; }
-    }
-
-    .hero h1 {
+    .card-title {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: clamp(3rem, 8vw, 6rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1.02;
+      font-size: 1rem;
+      font-weight: 700;
       color: var(--cream);
-      margin-bottom: 0;
-      max-width: 820px;
-      animation: fadeUp 0.5s 0.1s ease forwards;
-      opacity: 0;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
     }
-
-    .hero h1 .accent {
-      color: var(--star);
-      display: block;
-    }
-
-    .hero-sub {
-      font-size: clamp(1rem, 2.2vw, 1.18rem);
+    .card-body {
+      font-size: 0.88rem;
       color: var(--cream-dim);
-      max-width: 460px;
-      line-height: 1.8;
-      margin: 2rem auto 2.75rem;
-      animation: fadeUp 0.5s 0.2s ease forwards;
-      opacity: 0;
+      line-height: 1.6;
     }
-
-    .hero-sub strong {
-      color: var(--text);
-      font-weight: 400;
-    }
-
-    .waitlist-wrap {
+    .card-list {
+      list-style: none;
+      margin: 0.6rem 0 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 0.7rem;
-      animation: fadeUp 0.5s 0.3s ease forwards;
-      opacity: 0;
+      gap: 0.4rem;
     }
-
-    .waitlist-form {
+    .card-list li {
+      font-size: 0.83rem;
+      color: var(--text);
+      padding: 0.45rem 0.65rem;
+      background: rgba(138,171,220,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .card-list li .item-name {
+      color: var(--star);
+      font-weight: 500;
+      margin-right: 0.4rem;
+    }
+    .card-list li .item-why {
+      color: var(--cream-dim);
+      font-size: 0.78rem;
+      display: block;
+      margin-top: 0.15rem;
+    }
+    .card-actions {
+      margin-top: 1rem;
       display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
-      max-width: 420px;
-      width: 100%;
     }
 
-    .waitlist-form input {
-      flex: 1;
-      padding: 0.9rem 1.15rem;
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.83rem;
+      font-weight: 500;
+      padding: 0.55rem 1.05rem;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      border: 1px solid transparent;
+    }
+    .btn-primary {
+      background: var(--star);
+      color: var(--bg);
+    }
+    .btn-primary:hover { background: var(--cream); }
+    .btn-secondary {
+      background: transparent;
+      color: var(--cream-dim);
+      border-color: var(--border-strong);
+    }
+    .btn-secondary:hover { color: var(--cream); border-color: var(--star); }
+
+    /* Input area */
+    .input-area {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg);
+      border-top: 1px solid var(--border-strong);
+      padding: 0.9rem 1.25rem 1rem;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .input-area.hidden {
+      opacity: 0;
+      transform: translateY(100%);
+      pointer-events: none;
+    }
+    .input-inner {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      gap: 0.55rem;
+      align-items: flex-end;
       background: var(--surface);
       border: 1px solid var(--border-strong);
-      border-radius: 100px;
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 300;
-      outline: none;
+      border-radius: 18px;
+      padding: 0.55rem 0.55rem 0.55rem 0.95rem;
       transition: border-color 0.2s;
     }
-    .waitlist-form input:focus { border-color: var(--star); }
-    .waitlist-form input::placeholder { color: var(--text-dim); }
+    .input-inner:focus-within { border-color: var(--star); }
 
-    .waitlist-form button {
-      padding: 0.9rem 1.5rem;
+    #input {
+      flex: 1;
+      resize: none;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 300;
+      line-height: 1.5;
+      padding: 0.45rem 0;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    #input::placeholder { color: var(--text-dim); }
+
+    #send {
+      width: 36px; height: 36px;
+      flex-shrink: 0;
       background: var(--star);
       border: none;
-      border-radius: 100px;
-      color: var(--bg);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 500;
+      border-radius: 12px;
       cursor: pointer;
-      white-space: nowrap;
-      flex-shrink: 0;
-      transition: background 0.2s;
-    }
-    .waitlist-form button:hover { background: var(--cream); }
-
-    .waitlist-note {
-      font-size: 0.78rem;
-      color: var(--cream-dim);
-    }
-
-    .waitlist-success {
-      display: none;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.82rem;
-      color: #b8e0c4;
-      background: rgba(100,180,120,0.08);
-      border: 1px solid rgba(100,180,120,0.25);
-      border-radius: 100px;
-      padding: 0.7rem 1.4rem;
-    }
-
-    .platforms {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
+      align-items: center;
       justify-content: center;
-      margin-top: 3.5rem;
-      animation: fadeUp 0.5s 0.4s ease forwards;
-      opacity: 0;
+      transition: background 0.2s, opacity 0.2s;
     }
+    #send:hover { background: var(--cream); }
+    #send:disabled { opacity: 0.4; cursor: not-allowed; }
+    #send svg { width: 14px; height: 14px; fill: var(--bg); }
 
-    .platform-badge {
-      font-size: 0.64rem;
-      letter-spacing: 0.06em;
-      color: var(--text-dim);
-      background: rgba(138,171,220,0.03);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 0.25rem 0.65rem;
-      transition: all 0.2s;
-    }
-    .platform-badge:hover { color: var(--star); border-color: rgba(138,171,220,0.28); }
-
-    /* For you */
-    .for-you {
-      padding: 5rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .section-label {
-      font-size: 0.64rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--star-dim);
-      margin-bottom: 1rem;
-    }
-
-    .section-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: clamp(1.9rem, 4.5vw, 2.9rem);
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      color: var(--cream);
-      line-height: 1.15;
-      max-width: 600px;
-      margin-bottom: 0.85rem;
-    }
-
-    .section-sub {
-      font-size: 0.92rem;
-      color: var(--cream-dim);
-      max-width: 460px;
-      line-height: 1.72;
-    }
-
-    .personas {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      max-width: 1000px;
-      width: 100%;
-      margin-top: 3rem;
-    }
-
-    @media (max-width: 800px) {
-      .personas { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media (max-width: 480px) {
-      .personas { grid-template-columns: 1fr; }
-    }
-
-    .persona {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.5rem;
-      text-align: left;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .persona:hover { border-color: var(--border-strong); transform: translateY(-2px); }
-
-    .persona-emoji { font-size: 1.4rem; display: block; margin-bottom: 0.7rem; }
-
-    .persona h3 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: var(--cream);
-      letter-spacing: -0.01em;
-      margin-bottom: 0.4rem;
-    }
-
-    .persona p { font-size: 0.78rem; color: var(--cream-dim); line-height: 1.62; }
-
-    /* Demo */
-    .demo-section {
-      padding: 5rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .mockup-scene {
-      display: flex;
-      justify-content: center;
-      background: #080c18;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid var(--border-strong);
-      box-shadow: 0 40px 100px rgba(0,0,0,0.7);
-      max-width: 420px;
-      width: 100%;
-      margin-top: 3rem;
-    }
-
-    .mockup-builder-bg { display: none; }
-
-    .mockup-sidebar {
-      width: 100%;
+    /* Brief panel */
+    .brief-panel {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
       background: var(--bg);
-      display: flex;
-      flex-direction: column;
-      height: 540px;
+      border-top: 1px solid var(--border-strong);
+      padding: 1.5rem 1.25rem 1.75rem;
+      transform: translateY(100%);
+      transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+      z-index: 60;
+      max-height: 90dvh;
+      overflow-y: auto;
     }
+    .brief-panel.visible { transform: translateY(0); }
 
-    .mockup-header {
-      padding: 0.7rem 0.9rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
+    .brief-inner {
+      max-width: 680px;
+      margin: 0 auto;
     }
-
-    .mockup-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.82rem; font-weight: 700; }
-    .mockup-logo span:first-child { color: var(--star); }
-    .mockup-logo span:last-child  { color: var(--cream); }
-
-    .mockup-badge {
-      font-size: 0.47rem; letter-spacing: 0.06em;
-      color: var(--cream-dim);
-      background: rgba(138,171,220,0.06);
-      border: 1px solid rgba(138,171,220,0.1);
-      border-radius: 100px;
-      padding: 0.1rem 0.36rem;
-    }
-
-    .mockup-phase {
-      margin-left: auto;
-      font-size: 0.47rem; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--star-dim);
-      background: rgba(138,171,220,0.08);
-      border: 1px solid rgba(138,171,220,0.15);
-      border-radius: 100px;
-      padding: 0.1rem 0.36rem;
-    }
-
-    .mockup-messages {
-      flex: 1;
-      padding: 0.8rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.45rem;
-      overflow: hidden;
-    }
-
-    .mb {
-      max-width: 88%;
-      padding: 0.5rem 0.7rem;
-      border-radius: 11px;
-      font-size: 0.69rem;
-      line-height: 1.55;
-      opacity: 0;
-      transform: translateY(5px);
-    }
-
-    .mb.nerlo {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 3px;
-      color: var(--text);
-      align-self: flex-start;
-      animation: bubbleIn 0.35s ease forwards;
-    }
-
-    .mb.user {
-      background: #1e2d4a;
-      border: 1px solid rgba(138,171,220,0.18);
-      border-bottom-right-radius: 3px;
-      color: #c8d8f0;
-      align-self: flex-end;
-      animation: bubbleIn 0.35s ease forwards;
-    }
-
-    .b1 { animation-delay: 0.6s; }
-    .b2 { animation-delay: 1.7s; }
-    .b3 { animation-delay: 2.8s; }
-    .b4 { animation-delay: 3.8s; }
-    .b5 { animation-delay: 4.9s; }
-    .b6 { animation-delay: 5.9s; }
-    .b7 { animation-delay: 7.0s; }
-
-    @keyframes bubbleIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .mockup-input-area {
-      padding: 0.55rem 0.7rem 0.7rem;
-      border-top: 1px solid var(--border);
-    }
-
-    .mockup-input-row { display: flex; gap: 0.35rem; align-items: center; }
-
-    .mockup-input-box {
-      flex: 1; height: 30px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-    }
-
-    .mockup-send {
-      width: 30px; height: 30px;
-      background: var(--star);
-      border-radius: 7px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .mockup-send svg { width: 10px; height: 10px; fill: var(--bg); }
-
-    /* How it works */
-    .how-section {
-      padding: 5rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.25rem;
-      max-width: 860px;
-      width: 100%;
-      margin-top: 3rem;
-    }
-
-    @media (max-width: 720px) {
-      .steps { grid-template-columns: 1fr; }
-    }
-
-    .step {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 1.75rem;
-      text-align: left;
-      transition: border-color 0.2s, transform 0.2s;
-    }
-    .step:hover { border-color: var(--border-strong); transform: translateY(-2px); }
-
-    .step-num { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--star-dim); margin-bottom: 0.9rem; }
-    .step-icon { font-size: 1.4rem; display: block; margin-bottom: 0.65rem; }
-
-    .step h3 {
+    .brief-heading {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 0.98rem;
+      font-size: 1.4rem;
       font-weight: 700;
       color: var(--cream);
-      letter-spacing: -0.02em;
-      margin-bottom: 0.45rem;
-    }
-
-    .step p { font-size: 0.8rem; color: var(--cream-dim); line-height: 1.65; }
-
-    /* Truth */
-    .truth-section {
-      padding: 4rem 1.5rem;
-      display: flex;
-      justify-content: center;
-    }
-
-    .truth-card {
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: 16px;
-      padding: 3rem 2.5rem;
-      max-width: 640px;
-      width: 100%;
-      text-align: center;
-    }
-
-    .truth-card p {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: clamp(1.05rem, 2.5vw, 1.35rem);
-      font-weight: 600;
-      color: var(--cream);
-      line-height: 1.6;
-      letter-spacing: -0.02em;
-    }
-
-    .truth-card p em { font-style: normal; color: var(--star); }
-
-    .truth-card small {
-      display: block;
-      margin-top: 1.25rem;
-      font-size: 0.72rem;
-      color: var(--text-dim);
-    }
-
-    /* Bottom CTA */
-    .bottom-cta {
-      padding: 7rem 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .bottom-cta h2 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: var(--cream);
-      line-height: 1.08;
-      max-width: 560px;
+      letter-spacing: -0.01em;
       margin-bottom: 1rem;
     }
-
-    .bottom-cta h2 .accent { color: var(--star); }
-
-    .bottom-cta > p {
-      font-size: 0.92rem;
-      color: var(--cream-dim);
-      max-width: 400px;
-      margin-bottom: 2.5rem;
-      line-height: 1.72;
+    .brief-text {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      max-height: 50dvh;
+      overflow-y: auto;
     }
-
-    footer {
-      padding: 1.75rem 2rem;
-      border-top: 1px solid var(--border);
+    .brief-actions {
+      margin-top: 1rem;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .brief-builders {
+      margin-top: 1.4rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--border);
+    }
+    .brief-builders-label {
+      font-size: 0.76rem;
+      color: var(--cream-dim);
+      margin-bottom: 0.7rem;
+    }
+    .brief-builders-placeholder {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      font-style: italic;
+      padding: 0.85rem 1rem;
+      background: rgba(138,171,220,0.03);
+      border: 1px dashed var(--border-strong);
+      border-radius: 10px;
     }
 
-    .footer-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem; font-weight: 700; text-decoration: none; }
-    .footer-logo span:first-child { color: var(--star); }
-    .footer-logo span:last-child  { color: var(--cream); }
-    .footer-note { font-size: 0.78rem; color: var(--cream-dim); }
-
-    .reveal {
-      opacity: 0;
-      transform: translateY(18px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
-    }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 680px) {
-      nav { padding: 1rem 1.25rem; }
-      .mockup-scene { height: auto; flex-direction: column; }
-      .mockup-builder-bg { display: none; }
-      .mockup-sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border-strong); height: 380px; }
-      .waitlist-form { flex-direction: column; }
-      .waitlist-form button { width: 100%; }
+    @media (max-width: 600px) {
+      nav { padding: 0.85rem 1.1rem; }
+      .messages { padding: 1.5rem 1rem 9rem; }
+      .input-area { padding: 0.7rem 0.9rem 0.85rem; }
+      .bubble { font-size: 0.92rem; }
     }
   </style>
   <!-- Privacy-friendly analytics by Plausible -->
@@ -617,210 +401,479 @@
 
 <nav>
   <a href="/" class="nav-logo"><span>ner</span><span>lo</span></a>
-  <a href="#waitlist" class="nav-cta">Join waitlist</a>
 </nav>
 
-<!-- Hero -->
-<section class="hero">
-  <div class="hero-glow"></div>
-  <div class="hero-eyebrow">Early access — now open</div>
-  <h1>Your idea,<br/><span class="accent">finally understood.</span></h1>
-  <p class="hero-sub">
-    You have the idea.<br/>
-    You just need it understood.<br/>
-    <strong>That's what nerlo does.</strong>
-  </p>
-
-  <div class="waitlist-wrap" id="waitlist">
-    <div class="waitlist-form">
-      <input type="email" id="email-input" placeholder="your@email.com" autocomplete="email"/>
-      <button onclick="joinWaitlist('email-input','waitlist-success')">Get early access</button>
-    </div>
-    <div class="waitlist-success" id="waitlist-success"></div>
-    <p class="waitlist-note">Free during beta · No credit card · Installs in 30 seconds</p>
+<main class="chat">
+  <div class="messages" id="messages">
+    <div class="messages-inner" id="messages-inner"></div>
   </div>
 
-  <div class="platforms">
-    <span class="platform-badge">Lovable</span>
-    <span class="platform-badge">Bolt</span>
-    <span class="platform-badge">v0</span>
-    <span class="platform-badge">Replit</span>
-    <span class="platform-badge">Cursor</span>
-    <span class="platform-badge">Base44</span>
-  </div>
-</section>
-
-<!-- For you -->
-<section class="for-you reveal">
-  <div class="section-label">Who nerlo is for</div>
-  <h2 class="section-title" style="text-wrap:balance;">Built for people with ideas, not degrees.</h2>
-  <p class="section-sub">nerlo is for people with real ideas who just need someone to translate them.</p>
-
-  <div class="personas">
-    <div class="persona">
-      <span class="persona-emoji">👩‍💼</span>
-      <h3>The small business owner</h3>
-      <p>You know exactly how your business works. You just need an app that works the same way — without having to think like an engineer to get there.</p>
-    </div>
-    <div class="persona">
-      <span class="persona-emoji">💡</span>
-      <h3>The idea person</h3>
-      <p>You've had this idea for years. Every time you try an AI builder, it builds something close but not quite right. nerlo fixes that.</p>
-    </div>
-    <div class="persona">
-      <span class="persona-emoji">🎨</span>
-      <h3>The creative</h3>
-      <p>You think in pictures, not in specs. nerlo asks questions in plain English and turns your answers into something a builder actually gets.</p>
-    </div>
-    <div class="persona">
-      <span class="persona-emoji">🚀</span>
-      <h3>The first-time builder</h3>
-      <p>You just discovered AI builders and they feel like a lot. nerlo sits right next to you and makes sure nothing gets lost in translation.</p>
+  <div class="input-area" id="input-area">
+    <div class="input-inner">
+      <textarea id="input" rows="1" placeholder="tell me what you want to build..." autocomplete="off"></textarea>
+      <button id="send" aria-label="send">
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
     </div>
   </div>
-</section>
+</main>
 
-<!-- Demo -->
-<section class="demo-section reveal">
-  <div class="section-label">See it in action</div>
-  <h2 class="section-title" style="text-align:center;">Always there.<br/>Right inside your builder.</h2>
-  <p class="section-sub" style="text-align:center;">nerlo opens as a sidebar, asks exactly the right questions, and hands your builder a brief it understands the first time.</p>
-
-  <div class="mockup-scene">
-    <div class="mockup-builder-bg">
-      <div class="builder-bar"></div>
-      <div class="builder-bar short"></div>
-      <div class="builder-editor">
-        <div class="el xl"></div>
-        <div class="el m i"></div>
-        <div class="el s i"></div>
-        <div class="el l"></div>
-        <div class="el m"></div>
-        <div class="el s i"></div>
-        <div class="el l i"></div>
-        <div class="el m"></div>
-        <div class="el s"></div>
-        <div class="el xl"></div>
-        <div class="el m i"></div>
-        <div class="el l"></div>
-      </div>
+<aside class="brief-panel" id="brief-panel">
+  <div class="brief-inner">
+    <h2 class="brief-heading">Your brief is ready.</h2>
+    <pre class="brief-text" id="brief-text"></pre>
+    <div class="brief-actions">
+      <button class="btn btn-primary" id="copy-brief">Copy Brief</button>
     </div>
-
-    <div class="mockup-sidebar">
-      <div class="mockup-header">
-        <div class="mockup-logo"><span>ner</span><span>lo</span></div>
-        <span class="mockup-badge">Lovable</span>
-        <span class="mockup-phase">planning</span>
-      </div>
-      <div class="mockup-messages">
-        <div class="mb nerlo b1">Hey! I'm nerlo — right here inside Lovable with you. What do you want to build?</div>
-        <div class="mb user b2">An app for my dog walking business. Clients can book walks and pay online.</div>
-        <div class="mb nerlo b3">Do clients pick from time slots you set in advance, or can they request any time?</div>
-        <div class="mb user b4">Pre-set slots. I don't want random requests coming in.</div>
-        <div class="mb nerlo b5">Just you walking dogs, or do you have other walkers you manage?</div>
-        <div class="mb user b6">Just me for now, but I want to add walkers later if I grow.</div>
-        <div class="mb nerlo b7">When a walk is booked and paid, do customers get a confirmation by email, text, or both?</div>
-      </div>
-      <div class="mockup-input-area">
-        <div class="mockup-input-row">
-          <div class="mockup-input-box"></div>
-          <div class="mockup-send">
-            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
-          </div>
-        </div>
-      </div>
+    <div class="brief-builders">
+      <div class="brief-builders-label">Choose where to build:</div>
+      <div class="brief-builders-placeholder">Builder selection coming soon</div>
     </div>
   </div>
-</section>
-
-<!-- How it works -->
-<section class="how-section reveal">
-  <div class="section-label">How it works</div>
-  <h2 class="section-title">Three steps.<br/>No tech talk.</h2>
-  <p class="section-sub">nerlo runs as a Chrome extension, right inside your AI builder. Open it, talk, and let it turn your idea into something your builder can build.</p>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">Step 01</div>
-      <span class="step-icon">💬</span>
-      <h3>Describe your idea in plain English</h3>
-      <p>Talk to nerlo the way you'd explain your idea to a friend. Messy thoughts are welcome — that's what nerlo is for.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">Step 02</div>
-      <span class="step-icon">🎯</span>
-      <h3>nerlo asks the questions that matter</h3>
-      <p>nerlo knows what AI builders need to hear. It asks only the questions that shape what gets built — and stops when it truly gets your vision.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">Step 03</div>
-      <span class="step-icon">⚡</span>
-      <h3>Paste the brief. Build the right thing.</h3>
-      <p>nerlo hands you a precise brief tailored to your specific builder. Paste it in, hit enter, and watch your idea come to life exactly as you meant it.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Truth -->
-<section class="truth-section reveal">
-  <div class="truth-card">
-    <p style="text-wrap:balance;">AI builders can build almost anything. They just need to understand what you meant. <em>That's what nerlo is for.</em></p>
-    <small>Works with Lovable · Bolt · v0 · Replit · Cursor · Base44</small>
-  </div>
-</section>
-
-<!-- Bottom CTA -->
-<section class="bottom-cta reveal">
-  <h2>Your idea has been<br/><span class="accent">waiting long enough.</span></h2>
-  <p>Join the waitlist and be first in line when nerlo opens up.</p>
-
-  <div class="waitlist-wrap">
-    <div class="waitlist-form">
-      <input type="email" id="email-input-2" placeholder="your@email.com" autocomplete="email"/>
-      <button onclick="joinWaitlist('email-input-2','waitlist-success-2')">Get early access</button>
-    </div>
-    <div class="waitlist-success" id="waitlist-success-2"></div>
-    <p class="waitlist-note">Free during beta · No credit card needed</p>
-  </div>
-</section>
-
-<footer>
-  <a href="/" class="footer-logo"><span>ner</span><span>lo</span></a>
-  <p class="footer-note">© <span id="year"></span> nerlo · For the ideas that haven't been built yet.</p>
-</footer>
+</aside>
 
 <script>
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+  const SYSTEM_INTAKE = `LANGUAGE RULES — NO EXCEPTIONS:
+Never use "like" as a filler, connector, or example introducer. Replace with "such as", "for example", or "for instance".
+
+EVERY response must open with a question or directly lead into one. Never open with a declarative statement of any kind about the user's idea, their message, or any element of it. This includes compliments, observations, summaries, and statements that frame or elevate a detail before asking about it.
+
+BANNED — any sentence that makes a statement before the question:
+"The live map is the centerpiece here —"
+"That's a critical detail to nail down —"
+"Payments are a key thing to sort out —"
+"Got it. When he drags someone up..."
+"Perfect, that makes sense —"
+
+CORRECT — question comes first, no preamble:
+"Does the walker share their location from their own phone, or would you use a GPS device on the collar?"
+"When he drags someone up, does everyone below shift down automatically?"
+
+The rule: if the first word of your response is not the start of a question, rewrite it until it is.
+
+CONTENT RULES — NO EXCEPTIONS:
+
+1. NEVER ASK WHAT YOU ALREADY KNOW.
+Before asking anything, extract what is already known from two sources:
+- EXPLICIT: What the user already said.
+- DOMAIN-IMPLIED: What is universally true for this type of app.
+Never ask about these. Only ask about non-obvious decisions specific to this person's vision.
+
+2. NEVER REPEAT A QUESTION.
+Before forming any question, scan every prior message and build a mental list of every topic already answered. If a topic is answered in any form or wording, it is closed.
+
+3. NEVER INVENT DETAILS.
+Only include in the brief what the user explicitly stated or confirmed. Never assume and include: offline mode, SMS verification, photo upload, ratings, reviews, social features, admin panels, analytics.
+
+4. NEVER DROP FEATURES FROM THE OPENING MESSAGE.
+Before generating the brief, scan the user's very first message and cross-check every feature mentioned against what is in the brief. If something was mentioned in the opening message but never came up again during intake, it must still appear in the brief.
+
+5. KNOW WHEN TO STOP.
+Before each question, ask: "Would the answer change what gets built?" If yes — ask it. If no — stop and generate the brief. When nerlo has enough, ask exactly one cosmetic question: "One last thing — how should this feel visually? For example, clean and minimal, bold and colorful, warm and friendly, or something else?" Accept any answer. Do not ask follow-up cosmetic questions. Generate the brief immediately after.
+
+6. ONE QUESTION AT A TIME.
+Never ask multiple questions in one message.
+
+7. NEVER ASK ABOUT TECHNICAL INFRASTRUCTURE.
+Never ask which payment processor, database, authentication provider, email service, or SMS service they want to use.
+
+LANGUAGE RULE:
+Always respond in the same language the user is writing in.
+
+WHO YOU ARE:
+You are nerlo — an AI that deeply understands what people want to build and translates their vision into a precise brief. Talk like a smart friend who genuinely wants to understand what they are imagining. Never mention you are collecting information. Never compliment the idea. Never express excitement. Get straight to the point.
+
+WHEN READY, respond with ONLY this — no text before or after:
+NERLO_BRIEF_READY
+{"summary":"ready","brief":"<spec>"}
+
+The brief must read like a spec written by a senior engineer — precise, unambiguous, complete. No markdown. No asterisks, bullets, bold, or headers. Plain text only. Eight sections in this exact order, ALL CAPS headings, blank line between sections:
+
+PRODUCT VISION
+One or two plain-English sentences. What it is and why it matters. No tech terms.
+
+USER ROLES
+Every user type and exactly what each can and cannot do.
+
+CORE DATA MODEL
+Every entity that persists, its fields, and how entities relate.
+
+KEY BEHAVIORS
+Every important action and flow — happy path and edge cases.
+
+EXPLICIT CONSTRAINTS
+What the app must NOT do.
+
+VISUAL DESIGN
+4-6 sentences. Light or dark mode. Visual tone. Color palette direction. Mobile-first or desktop-first. Navigation style.
+
+SUCCESS CRITERIA
+One or two sentences defining what "working" looks like from the user's point of view.
+
+TECHNICAL NOTES
+Framework, database, auth, hosting, and any external services. Since this is a web product with no specific builder selected yet, write: "Stack to be determined based on builder platform chosen." Do not recommend any specific external services — the user will choose their builder after seeing the brief.`;
+
+  const MARKET_SYSTEM = 'You analyze app ideas and assess market saturation. Respond with ONLY valid JSON: {"verdict":"saturated"|"competitive"|"clear","competitors":["Name1","Name2","Name3"]}. saturated = many established players dominating the exact space. competitive = established players exist but room for differentiation. clear = no dominant players or genuinely novel idea. Be accurate — most ideas are competitive, not saturated.';
+
+  // State
+  let conversationHistory = [];
+  let answeredTopics = [];
+  let marketChecked = false;
+  let isTyping = false;
+  let shownServices = new Set();
+  let awaitingServiceConfirmation = false;
+  let briefContent = null;
+
+  // DOM
+  const messagesEl = document.getElementById('messages');
+  const innerEl = document.getElementById('messages-inner');
+  const inputEl = document.getElementById('input');
+  const sendEl = document.getElementById('send');
+  const inputArea = document.getElementById('input-area');
+  const briefPanel = document.getElementById('brief-panel');
+  const briefTextEl = document.getElementById('brief-text');
+  const copyBriefBtn = document.getElementById('copy-brief');
+
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     });
-  }, { threshold: 0.08 });
-
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-  function joinWaitlist(inputId, successId) {
-    const email = document.getElementById(inputId).value.trim();
-    if (!email || !email.includes('@')) { document.getElementById(inputId).focus(); return; }
-    const form = document.getElementById(inputId).closest('.waitlist-form');
-    if (form) form.style.display = 'none';
-    const success = document.getElementById(successId);
-    success.textContent = '✓ You\'re on the list — we\'ll be in touch soon';
-    success.style.display = 'flex';
-    fetch('https://formspree.io/f/xyklobpl', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    }).catch(() => {});
   }
 
-  document.getElementById('year').textContent = new Date().getFullYear();
+  function addBubble(role, text) {
+    const el = document.createElement('div');
+    el.className = 'bubble ' + role;
+    el.textContent = text;
+    innerEl.appendChild(el);
+    scrollToBottom();
+    return el;
+  }
 
-  document.getElementById('email-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') joinWaitlist('email-input', 'waitlist-success');
+  function showTyping() {
+    if (isTyping) return;
+    isTyping = true;
+    const el = document.createElement('div');
+    el.className = 'typing';
+    el.id = 'typing-indicator';
+    el.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
+    innerEl.appendChild(el);
+    scrollToBottom();
+  }
+
+  function hideTyping() {
+    isTyping = false;
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  function setInputEnabled(enabled) {
+    inputEl.disabled = !enabled;
+    sendEl.disabled = !enabled;
+    if (enabled) inputEl.focus();
+  }
+
+  function renderWelcome() {
+    innerEl.innerHTML = '';
+    addBubble('nerlo', 'Your idea deserves to exist.');
+    setTimeout(() => {
+      addBubble('nerlo', "Tell me what you want to build. Don't worry about getting it perfect — that's what I'm here for.");
+    }, 350);
+  }
+
+  function resetConversation() {
+    conversationHistory = [];
+    answeredTopics = [];
+    marketChecked = false;
+    shownServices = new Set();
+    awaitingServiceConfirmation = false;
+    briefContent = null;
+    briefPanel.classList.remove('visible');
+    inputArea.classList.remove('hidden');
+    renderWelcome();
+    setInputEnabled(true);
+  }
+
+  // API
+  async function callAPI(systemPrompt, messages) {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages
+      })
+    });
+    return res.json();
+  }
+
+  function buildSystemPrompt() {
+    const topicsBlock = answeredTopics.length
+      ? 'TOPICS ALREADY DECIDED — DO NOT ASK ABOUT THESE AGAIN:\n' + answeredTopics.map(t => '- ' + t).join('\n') + '\n\nEvery item on this list has already been answered. Asking about any of these topics again is a critical failure.\n\n'
+      : '';
+    return topicsBlock + SYSTEM_INTAKE;
+  }
+
+  // Topic extraction
+  async function extractTopic() {
+    const userMessages = conversationHistory.filter(m => m.role === 'user');
+    if (userMessages.length === 0) return;
+    const lastUser = userMessages[userMessages.length - 1];
+    const lastAssistant = conversationHistory.filter(m => m.role === 'assistant').pop();
+    const exchange = (lastAssistant ? 'nerlo asked: ' + lastAssistant.content + '\n' : '') + 'user answered: ' + lastUser.content;
+    const sys = 'Identify the topic covered in this exchange as a 1-5 word lowercase noun phrase. Respond with ONLY the topic phrase or exactly: none';
+    try {
+      const data = await callAPI(sys, [{ role: 'user', content: exchange }]);
+      if (data.error || !data.content?.[0]) return;
+      const topic = data.content[0].text.trim().toLowerCase().replace(/^["'`\s]+|["'`\s.,;:!?]+$/g, '');
+      if (!topic || topic === 'none' || topic.split(/\s+/).length > 6) return;
+      if (!answeredTopics.some(t => t.toLowerCase() === topic)) answeredTopics.push(topic);
+    } catch {}
+  }
+
+  // Services detection
+  function detectServicesInMessage(text) {
+    const lower = text.toLowerCase();
+    const triggers = [
+      { keywords: ['pay', 'payment', 'payments', 'charge', 'subscription', 'billing'], name: 'Payments', why: 'Online payment processing requires a separate Stripe account.', url: 'https://stripe.com' },
+      { keywords: ['email', 'send them', 'confirmation email', 'reminder email', 'email notification'], name: 'Email Sending', why: 'Sending transactional emails requires a Resend account.', url: 'https://resend.com' },
+      { keywords: ['sms', 'text message', 'text them', 'text reminder'], name: 'SMS Messaging', why: 'Sending text messages requires a Twilio account.', url: 'https://twilio.com' },
+      { keywords: ['map', 'maps', 'directions', 'routing'], name: 'Map Display', why: 'Showing a live map requires a Google Maps API key.', url: 'https://developers.google.com/maps' }
+    ];
+    const detected = [];
+    for (const trigger of triggers) {
+      if (shownServices.has(trigger.name)) continue;
+      if (!trigger.keywords.some(kw => lower.includes(kw))) continue;
+      detected.push(trigger);
+    }
+    return detected;
+  }
+
+  function showServiceInlineNote(service) {
+    shownServices.add(service.name);
+    const el = document.createElement('div');
+    el.className = 'note';
+    const safeUrl = service.url.replace(/"/g, '&quot;');
+    el.innerHTML = `<span class="note-name">${service.name}</span> · ${escapeHtml(service.why)} <a href="${safeUrl}" target="_blank" rel="noopener">learn more</a>`;
+    innerEl.appendChild(el);
+    scrollToBottom();
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // Market card
+  function showMarketCard(verdict, competitors) {
+    return new Promise(resolve => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const competitorsLine = competitors && competitors.length
+        ? '<div style="margin-top:0.55rem;font-size:0.82rem;color:var(--text);">Established players: ' + competitors.map(escapeHtml).join(' · ') + '</div>'
+        : '';
+      const message = verdict === 'saturated'
+        ? 'This space is crowded. Strong existing players already dominate it.'
+        : 'There are established players here, but there is room for a different angle.';
+      card.innerHTML = `
+        <div class="card-label">Heads up</div>
+        <div class="card-title">${escapeHtml(message)}</div>
+        ${competitorsLine}
+        <div class="card-actions">
+          <button class="btn btn-primary" data-act="angle">I have a unique angle</button>
+          <button class="btn btn-primary" data-act="personal">It's for personal use</button>
+          <button class="btn btn-secondary" data-act="reset">Let me try a different idea</button>
+        </div>
+      `;
+      innerEl.appendChild(card);
+      scrollToBottom();
+      card.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => {
+          const act = b.getAttribute('data-act');
+          card.remove();
+          resolve(act);
+        });
+      });
+    });
+  }
+
+  // Services confirmation card (first message)
+  function showServicesConfirmation(services) {
+    return new Promise(resolve => {
+      services.forEach(s => shownServices.add(s.name));
+      const card = document.createElement('div');
+      card.className = 'card';
+      const items = services.map(s => `
+        <li>
+          <span class="item-name">${escapeHtml(s.name)}</span>
+          <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" style="color:var(--cream-dim);font-size:0.76rem;">${escapeHtml(s.url.replace(/^https?:\/\//, ''))}</a>
+          <span class="item-why">${escapeHtml(s.why)}</span>
+        </li>
+      `).join('');
+      card.innerHTML = `
+        <div class="card-label">Heads up</div>
+        <div class="card-title">Your idea will need a few external accounts.</div>
+        <ul class="card-list">${items}</ul>
+        <div class="card-actions">
+          <button class="btn btn-primary" data-act="continue">Continue with these</button>
+          <button class="btn btn-secondary" data-act="simplify">Simplify the idea</button>
+        </div>
+      `;
+      innerEl.appendChild(card);
+      scrollToBottom();
+      card.querySelectorAll('button').forEach(b => {
+        b.addEventListener('click', () => {
+          const act = b.getAttribute('data-act');
+          card.remove();
+          resolve(act);
+        });
+      });
+    });
+  }
+
+  // Brief detection + display
+  function tryParseBrief(text) {
+    if (!text || !text.includes('NERLO_BRIEF_READY')) return null;
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  function showBrief(brief) {
+    briefContent = brief;
+    briefTextEl.textContent = brief;
+    inputArea.classList.add('hidden');
+    requestAnimationFrame(() => {
+      briefPanel.classList.add('visible');
+    });
+  }
+
+  copyBriefBtn.addEventListener('click', async () => {
+    if (!briefContent) return;
+    try {
+      await navigator.clipboard.writeText(briefContent);
+      const orig = copyBriefBtn.textContent;
+      copyBriefBtn.textContent = 'Copied';
+      setTimeout(() => { copyBriefBtn.textContent = orig; }, 1600);
+    } catch {
+      copyBriefBtn.textContent = 'Copy failed';
+    }
   });
-  document.getElementById('email-input-2').addEventListener('keydown', e => {
-    if (e.key === 'Enter') joinWaitlist('email-input-2', 'waitlist-success-2');
+
+  // Handle assistant response (shared by first and subsequent messages)
+  async function deliverAssistantResponse(data) {
+    hideTyping();
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'Something went wrong. Try again?');
+      setInputEnabled(true);
+      return;
+    }
+    const text = data.content[0].text || '';
+    const brief = tryParseBrief(text);
+    if (brief) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      addBubble('nerlo', 'Your brief is ready below.');
+      showBrief(brief.brief || '');
+      return;
+    }
+    addBubble('nerlo', text);
+    conversationHistory.push({ role: 'assistant', content: text });
+    extractTopic();
+    setInputEnabled(true);
+  }
+
+  // Main send flow
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text || isTyping || briefContent) return;
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    addBubble('user', text);
+    conversationHistory.push({ role: 'user', content: text });
+    setInputEnabled(false);
+
+    const isFirst = !marketChecked;
+    showTyping();
+
+    if (isFirst) {
+      marketChecked = true;
+      const intakePromise = callAPI(buildSystemPrompt(), conversationHistory.map(m => ({ role: m.role, content: m.content })));
+      const marketPromise = callAPI(MARKET_SYSTEM, [{ role: 'user', content: text }]).catch(() => null);
+
+      const [intakeData, marketData] = await Promise.all([intakePromise, marketPromise]);
+
+      // Market gate
+      let marketVerdict = null;
+      if (marketData && !marketData.error && marketData.content?.[0]) {
+        try {
+          const raw = marketData.content[0].text.trim();
+          const m = raw.match(/\{[\s\S]*\}/);
+          if (m) marketVerdict = JSON.parse(m[0]);
+        } catch {}
+      }
+
+      hideTyping();
+
+      if (marketVerdict && (marketVerdict.verdict === 'saturated' || marketVerdict.verdict === 'competitive')) {
+        const choice = await showMarketCard(marketVerdict.verdict, marketVerdict.competitors || []);
+        if (choice === 'reset') {
+          resetConversation();
+          return;
+        }
+      }
+
+      // Services gate (first message only)
+      const services = detectServicesInMessage(text);
+      if (services.length) {
+        await showServicesConfirmation(services);
+      }
+
+      showTyping();
+      // Tiny pause so the typing indicator registers visually
+      await new Promise(r => setTimeout(r, 250));
+      await deliverAssistantResponse(intakeData);
+      return;
+    }
+
+    // Subsequent message flow
+    const newServices = detectServicesInMessage(text);
+    const intakeData = await callAPI(buildSystemPrompt(), conversationHistory.map(m => ({ role: m.role, content: m.content })));
+
+    if (newServices.length) {
+      hideTyping();
+      newServices.forEach(showServiceInlineNote);
+      await new Promise(r => setTimeout(r, 600));
+      showTyping();
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    await deliverAssistantResponse(intakeData);
+  }
+
+  // Input handling
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 150) + 'px';
   });
+
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  sendEl.addEventListener('click', sendMessage);
+
+  // Boot
+  renderWelcome();
+  setInputEnabled(true);
 </script>
 </body>
 </html>
