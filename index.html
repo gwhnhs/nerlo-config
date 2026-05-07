@@ -316,82 +316,52 @@
     #send:disabled { opacity: 0.4; cursor: not-allowed; }
     #send svg { width: 14px; height: 14px; fill: var(--bg); }
 
-    /* Brief panel */
-    .brief-panel {
-      display: none;
-      flex-direction: column;
-      border-top: 1px solid var(--border-strong);
-      background: var(--bg);
-      max-height: 60dvh;
-      overflow-y: auto;
-      padding: 2rem 1.25rem 3rem;
-      animation: slideUp 0.4s ease forwards;
-    }
-
-    .brief-panel.visible {
+    .build-row {
       display: flex;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .brief-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.65rem;
       max-width: 680px;
       margin: 0 auto;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
+      padding: 0 1.25rem;
     }
-    .brief-heading {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--cream);
-      letter-spacing: -0.01em;
-      margin-bottom: 1rem;
+
+    .build-label {
+      font-size: 0.78rem;
+      color: var(--cream-dim);
+      letter-spacing: 0.04em;
     }
-    .brief-text {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
+
+    .btn-build {
+      padding: 0.75rem 1.5rem;
+      background: var(--star);
+      border: none;
+      border-radius: 100px;
+      color: var(--bg);
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-build:hover { background: var(--cream); }
+
+    .brief-bubble {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 16px;
+      border-bottom-left-radius: 5px;
+      padding: 1.25rem;
+      font-size: 0.88rem;
       line-height: 1.7;
-      color: var(--text);
       white-space: pre-wrap;
       word-wrap: break-word;
-      max-height: 50dvh;
-      overflow-y: auto;
-    }
-    .brief-actions {
-      margin-top: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      align-items: center;
-    }
-    .brief-builders {
-      margin-top: 1.4rem;
-      padding-top: 1.2rem;
-      border-top: 1px solid var(--border);
-    }
-    .brief-builders-label {
-      font-size: 0.76rem;
-      color: var(--cream-dim);
-      margin-bottom: 0.7rem;
-    }
-    .brief-builders-placeholder {
-      font-size: 0.78rem;
-      color: var(--text-dim);
-      font-style: italic;
-      padding: 0.85rem 1rem;
-      background: rgba(138,171,220,0.03);
-      border: 1px dashed var(--border-strong);
-      border-radius: 10px;
+      color: var(--text);
+      align-self: flex-start;
+      max-width: 86%;
+      animation: bubbleIn 0.3s ease forwards;
+      opacity: 0;
     }
 
     @media (max-width: 600px) {
@@ -425,15 +395,6 @@
       <button id="send" aria-label="send">
         <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
       </button>
-    </div>
-  </div>
-  <div class="brief-panel" id="brief-panel">
-    <div class="brief-inner">
-      <h2 class="brief-heading">Your brief is ready.</h2>
-      <pre class="brief-text" id="brief-text"></pre>
-      <div class="brief-actions">
-        <button class="btn btn-primary" id="build-btn">Build this in Lovable →</button>
-      </div>
     </div>
   </div>
 </main>
@@ -536,8 +497,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   const inputEl = document.getElementById('input');
   const sendEl = document.getElementById('send');
   const inputArea = document.getElementById('input-area');
-  const briefPanel = document.getElementById('brief-panel');
-  const briefTextEl = document.getElementById('brief-text');
 
   function scrollToBottom() {
     const el = document.getElementById('messages');
@@ -596,8 +555,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     shownServices = new Set();
     awaitingServiceConfirmation = false;
     briefContent = null;
-    briefPanel.classList.remove('visible');
-    inputArea.classList.remove('hidden');
+    inputArea.style.display = '';
     renderWelcome();
     setInputEnabled(true);
   }
@@ -755,18 +713,38 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
   function showBrief(brief) {
     briefContent = brief;
-    briefTextEl.textContent = brief;
-    inputArea.style.display = 'none';
-    briefPanel.classList.add('visible');
-    briefPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
 
-  document.getElementById('build-btn').addEventListener('click', () => {
-    if (!briefContent) return;
-    const encoded = encodeURIComponent(briefContent);
-    const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
-    window.open(url, '_blank');
-  });
+    const briefEl = document.createElement('div');
+    briefEl.className = 'brief-bubble';
+    briefEl.textContent = brief;
+    innerEl.appendChild(briefEl);
+    scrollToBottom();
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const label = document.createElement('div');
+      label.className = 'build-label';
+      label.textContent = 'your brief is ready — where do you want to build?';
+
+      const btn = document.createElement('button');
+      btn.className = 'btn-build';
+      btn.textContent = 'Build this in Lovable →';
+      btn.addEventListener('click', () => {
+        const encoded = encodeURIComponent(briefContent);
+        const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
+        window.open(url, '_blank');
+      });
+
+      row.appendChild(label);
+      row.appendChild(btn);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 400);
+
+    inputArea.style.display = 'none';
+  }
 
   // Handle assistant response (shared by first and subsequent messages)
   async function deliverAssistantResponse(data) {
@@ -780,7 +758,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     const brief = tryParseBrief(text);
     if (brief) {
       conversationHistory.push({ role: 'assistant', content: text });
-      addBubble('nerlo', 'Your brief is ready below.');
       showBrief(brief.brief || '');
       return;
     }
