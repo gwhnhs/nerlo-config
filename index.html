@@ -714,19 +714,11 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   function showBrief(brief) {
     briefContent = brief;
 
-    const briefEl = document.createElement('div');
-    briefEl.className = 'brief-bubble';
-    briefEl.textContent = brief;
-    innerEl.appendChild(briefEl);
-    scrollToBottom();
+    addBubble('nerlo', 'your brief is ready. one click and we start building.');
 
     setTimeout(() => {
       const row = document.createElement('div');
       row.className = 'build-row';
-
-      const label = document.createElement('div');
-      label.className = 'build-label';
-      label.textContent = 'your brief is ready — where do you want to build?';
 
       const btn = document.createElement('button');
       btn.className = 'btn-build';
@@ -737,7 +729,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
         window.open(url, '_blank');
       });
 
-      row.appendChild(label);
       row.appendChild(btn);
       innerEl.appendChild(row);
       scrollToBottom();
