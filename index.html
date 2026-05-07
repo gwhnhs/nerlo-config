@@ -146,26 +146,27 @@
     .note {
       align-self: flex-start;
       max-width: 86%;
-      background: rgba(138,171,220,0.04);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-left: 2px solid var(--star);
-      border-radius: 10px;
-      padding: 0.65rem 0.85rem;
-      font-size: 0.78rem;
-      color: var(--cream-dim);
-      line-height: 1.55;
+      border-bottom-left-radius: 5px;
+      border-radius: 16px;
+      border-bottom-left-radius: 5px;
+      padding: 0.85rem 1.05rem;
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.6;
       opacity: 0;
       animation: bubbleIn 0.3s ease forwards;
     }
     .note .note-name {
       color: var(--star);
       font-weight: 500;
-      letter-spacing: 0.02em;
     }
     .note a {
       color: var(--star);
+      font-size: 0.82rem;
       text-decoration: none;
-      border-bottom: 1px dotted rgba(138,171,220,0.4);
+      margin-left: 0.25rem;
     }
     .note a:hover { color: var(--cream); }
 
@@ -622,7 +623,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     const el = document.createElement('div');
     el.className = 'note';
     const safeUrl = service.url.replace(/"/g, '&quot;');
-    el.innerHTML = `<span class="note-name">${service.name}</span> · ${escapeHtml(service.why)} <a href="${safeUrl}" target="_blank" rel="noopener">learn more</a>`;
+    el.innerHTML = `one thing worth knowing — <span class="note-name">${escapeHtml(service.name)}</span> will need a separate account. ${escapeHtml(service.why)} <a href="${safeUrl}" target="_blank" rel="noopener">get started →</a>`;
     innerEl.appendChild(el);
     scrollToBottom();
   }
