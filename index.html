@@ -679,7 +679,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     const el = document.createElement('div');
     el.className = 'note';
     const safeUrl = service.url.replace(/"/g, '&quot;');
-    el.innerHTML = `one thing worth knowing — <span class="note-name">${escapeHtml(service.name)}</span> will need a separate account. ${escapeHtml(service.why)} <a href="${safeUrl}" target="_blank" rel="noopener">get started →</a>`;
+    el.innerHTML = `One thing worth knowing — <span class="note-name">${escapeHtml(service.name)}</span> will need a separate account. ${escapeHtml(service.why)} <a href="${safeUrl}" target="_blank" rel="noopener">Get started →</a>`;
     innerEl.appendChild(el);
     scrollToBottom();
   }
