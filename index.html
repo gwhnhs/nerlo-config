@@ -912,20 +912,27 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   setInputEnabled(true);
 
   // Check for pending brief after login redirect
-  window.addEventListener('load', () => {
+  window.addEventListener('load', async () => {
     const pending = sessionStorage.getItem('nerlo_pending_brief');
-    if (pending && window.Clerk) {
-      function checkUser() {
-        if (window.Clerk.user) {
-          sessionStorage.removeItem('nerlo_pending_brief');
-          briefContent = pending;
-          inputArea.style.display = 'none';
-          revealBrief();
-        } else {
-          setTimeout(checkUser, 500);
-        }
-      }
-      checkUser();
+    if (!pending) return;
+
+    // Wait up to 10s for the async Clerk script to attach window.Clerk
+    const start = Date.now();
+    while (!window.Clerk && Date.now() - start < 10000) {
+      await new Promise(r => setTimeout(r, 100));
+    }
+    if (!window.Clerk) return;
+
+    // Wait for Clerk to finish initializing (idempotent if auto-init already ran)
+    await window.Clerk.load();
+
+    if (window.Clerk.user) {
+      sessionStorage.removeItem('nerlo_pending_brief');
+      briefContent = pending;
+      inputArea.style.display = 'none';
+      revealBrief();
+    } else {
+      sessionStorage.removeItem('nerlo_pending_brief');
     }
   });
 </script>

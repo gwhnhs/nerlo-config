@@ -68,13 +68,20 @@
   <script>
     window.addEventListener('load', async () => {
       await window.Clerk.load();
+
+      // Same-origin path only — prevents open-redirect via redirect_url
+      const rawRedirect = new URLSearchParams(window.location.search).get('redirect_url');
+      const safeRedirect = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : null;
+      const afterSignInUrl = safeRedirect || 'https://nerlo.io/welcome';
+
       if (window.Clerk.user) {
-        window.location.href = '/welcome';
+        window.location.href = afterSignInUrl;
         return;
       }
       window.Clerk.mountSignIn(document.getElementById('clerk-sign-in'), {
-        afterSignInUrl: 'https://nerlo.io/welcome',
-        afterSignUpUrl: 'https://nerlo.io/welcome',        appearance: {
+        afterSignInUrl,
+        afterSignUpUrl: afterSignInUrl,
+        appearance: {
           variables: {
             colorPrimary: '#8aabdc',
             colorBackground: '#111827',

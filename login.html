@@ -101,8 +101,13 @@
     window.addEventListener('load', async () => {
       await window.Clerk.load();
 
+      // Same-origin path only — prevents open-redirect via redirect_url
+      const rawRedirect = new URLSearchParams(window.location.search).get('redirect_url');
+      const safeRedirect = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : null;
+      const afterSignInUrl = safeRedirect || '/welcome';
+
       if (window.Clerk.user) {
-        window.location.href = '/welcome';
+        window.location.href = afterSignInUrl;
         return;
       }
 
@@ -117,7 +122,8 @@
             borderRadius: '10px'
           }
         },
-        afterSignInUrl: '/welcome'
+        afterSignInUrl,
+        afterSignUpUrl: afterSignInUrl
       });
     });
   </script>
