@@ -771,55 +771,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   function showBrief(brief) {
     briefContent = brief;
     inputArea.style.display = 'none';
-
-    // Check if Clerk is loaded and user is already signed in
-    if (window.Clerk && window.Clerk.user) {
-      revealBrief();
-      return;
-    }
-
-    // Show auth modal
-    const overlay = document.createElement('div');
-    overlay.className = 'auth-overlay';
-    overlay.id = 'auth-overlay';
-
-    const box = document.createElement('div');
-    box.className = 'auth-box';
-
-    const heading = document.createElement('div');
-    heading.className = 'auth-heading';
-    heading.textContent = 'your brief is ready.';
-
-    const sub = document.createElement('div');
-    sub.className = 'auth-sub';
-    sub.textContent = 'sign in to unlock it — free, takes ten seconds.';
-
-    const clerkDiv = document.createElement('div');
-    clerkDiv.id = 'clerk-sign-in';
-
-    box.appendChild(heading);
-    box.appendChild(sub);
-    box.appendChild(clerkDiv);
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-
-    // Wait for Clerk to be ready then mount sign-in
-    function mountClerk() {
-      if (window.Clerk && window.Clerk.mountSignIn) {
-        window.Clerk.mountSignIn(clerkDiv);
-        // Poll for sign-in completion
-        const poll = setInterval(() => {
-          if (window.Clerk && window.Clerk.user) {
-            clearInterval(poll);
-            overlay.remove();
-            revealBrief();
-          }
-        }, 800);
-      } else {
-        setTimeout(mountClerk, 300);
-      }
-    }
-    mountClerk();
+    revealBrief();
   }
 
   function revealBrief() {
@@ -833,9 +785,55 @@ Framework, database, auth, hosting, and any external services. Since this is a w
       btn.className = 'btn-build';
       btn.textContent = 'Build this in Lovable →';
       btn.addEventListener('click', () => {
-        const encoded = encodeURIComponent(briefContent);
-        const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
-        window.open(url, '_blank');
+        if (window.Clerk && window.Clerk.user) {
+          const encoded = encodeURIComponent(briefContent);
+          const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
+          window.open(url, '_blank');
+          return;
+        }
+
+        // Show auth modal
+        const overlay = document.createElement('div');
+        overlay.className = 'auth-overlay';
+        overlay.id = 'auth-overlay';
+
+        const box = document.createElement('div');
+        box.className = 'auth-box';
+
+        const heading = document.createElement('div');
+        heading.className = 'auth-heading';
+        heading.textContent = 'almost there.';
+
+        const sub = document.createElement('div');
+        sub.className = 'auth-sub';
+        sub.textContent = 'sign in to start building — free, takes ten seconds.';
+
+        const clerkDiv = document.createElement('div');
+        clerkDiv.id = 'clerk-sign-in';
+
+        box.appendChild(heading);
+        box.appendChild(sub);
+        box.appendChild(clerkDiv);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        function mountClerk() {
+          if (window.Clerk && window.Clerk.mountSignIn) {
+            window.Clerk.mountSignIn(clerkDiv);
+            const poll = setInterval(() => {
+              if (window.Clerk && window.Clerk.user) {
+                clearInterval(poll);
+                overlay.remove();
+                const encoded = encodeURIComponent(briefContent);
+                const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
+                window.open(url, '_blank');
+              }
+            }, 800);
+          } else {
+            setTimeout(mountClerk, 300);
+          }
+        }
+        mountClerk();
       });
 
       row.appendChild(btn);
