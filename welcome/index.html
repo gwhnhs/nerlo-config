@@ -119,6 +119,10 @@
           clearTimeout(timeout);
           window.removeEventListener('message', onPong);
           window.postMessage({ type: 'NERLO_TOKEN', token: token }, '*');
+
+          const params = new URLSearchParams(window.location.search);
+          const redirectUrl = params.get('redirect_url') || '/';
+          setTimeout(() => { window.location.href = redirectUrl; }, 500);
         }
       }
 
