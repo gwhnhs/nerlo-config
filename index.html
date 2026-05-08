@@ -365,6 +365,55 @@
       opacity: 0;
     }
 
+    /* Auth modal */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(7,9,15,0.85);
+      backdrop-filter: blur(14px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .auth-box {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .auth-heading {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--cream);
+      letter-spacing: -0.01em;
+    }
+
+    .auth-sub {
+      font-size: 0.85rem;
+      color: var(--cream-dim);
+      line-height: 1.5;
+    }
+
+    #clerk-sign-in {
+      min-height: 300px;
+    }
+
     @media (max-width: 600px) {
       nav { padding: 0.85rem 1.1rem; }
       .messages { padding: 1.5rem 1rem 9rem; }
@@ -377,6 +426,13 @@
   <script>
     window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
     plausible.init()
+  </script>
+  <script
+    async
+    crossorigin="anonymous"
+    data-clerk-publishable-key="pk_live_Z2VuZXJvdXMtY2F0ZmlzaC0xMS5jbGVyay5hY2NvdW50cy5kZXYk"
+    src="https://generous-catfish-11.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
+    type="text/javascript">
   </script>
 </head>
 <body>
@@ -714,7 +770,59 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
   function showBrief(brief) {
     briefContent = brief;
+    inputArea.style.display = 'none';
 
+    // Check if Clerk is loaded and user is already signed in
+    if (window.Clerk && window.Clerk.user) {
+      revealBrief();
+      return;
+    }
+
+    // Show auth modal
+    const overlay = document.createElement('div');
+    overlay.className = 'auth-overlay';
+    overlay.id = 'auth-overlay';
+
+    const box = document.createElement('div');
+    box.className = 'auth-box';
+
+    const heading = document.createElement('div');
+    heading.className = 'auth-heading';
+    heading.textContent = 'your brief is ready.';
+
+    const sub = document.createElement('div');
+    sub.className = 'auth-sub';
+    sub.textContent = 'sign in to unlock it — free, takes ten seconds.';
+
+    const clerkDiv = document.createElement('div');
+    clerkDiv.id = 'clerk-sign-in';
+
+    box.appendChild(heading);
+    box.appendChild(sub);
+    box.appendChild(clerkDiv);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // Wait for Clerk to be ready then mount sign-in
+    function mountClerk() {
+      if (window.Clerk && window.Clerk.mountSignIn) {
+        window.Clerk.mountSignIn(clerkDiv);
+        // Poll for sign-in completion
+        const poll = setInterval(() => {
+          if (window.Clerk && window.Clerk.user) {
+            clearInterval(poll);
+            overlay.remove();
+            revealBrief();
+          }
+        }, 800);
+      } else {
+        setTimeout(mountClerk, 300);
+      }
+    }
+    mountClerk();
+  }
+
+  function revealBrief() {
     addBubble('nerlo', 'your brief is ready. one click and we start building.');
 
     setTimeout(() => {
@@ -734,8 +842,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
       innerEl.appendChild(row);
       scrollToBottom();
     }, 400);
-
-    inputArea.style.display = 'none';
   }
 
   // Handle assistant response (shared by first and subsequent messages)
