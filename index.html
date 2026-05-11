@@ -790,7 +790,10 @@ Framework, database, auth, hosting, and any external services. Since this is a w
       const btn = document.createElement('button');
       btn.className = 'btn-build';
       btn.textContent = 'Build this in Lovable →';
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
+        if (window.Clerk) {
+          await window.Clerk.load();
+        }
         if (window.Clerk && window.Clerk.user) {
           const brief = localStorage.getItem('nerlo_pending_brief') || briefContent;
           const encoded = encodeURIComponent(brief);
@@ -800,7 +803,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
           window.open(url, '_blank');
           return;
         }
-        // Save brief and chat to localStorage, then redirect to login
         localStorage.setItem('nerlo_pending_brief', briefContent);
         localStorage.setItem('nerlo_chat', JSON.stringify(conversationHistory));
         window.location.href = '/login?redirect_url=' + encodeURIComponent('/');
