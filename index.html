@@ -770,6 +770,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
   function showBrief(brief) {
     briefContent = brief;
+    localStorage.setItem('nerlo_pending_brief', brief);
     inputArea.style.display = 'none';
     revealBrief();
   }
@@ -786,13 +787,17 @@ Framework, database, auth, hosting, and any external services. Since this is a w
       btn.textContent = 'Build this in Lovable →';
       btn.addEventListener('click', () => {
         if (window.Clerk && window.Clerk.user) {
-          const encoded = encodeURIComponent(briefContent);
+          const brief = localStorage.getItem('nerlo_pending_brief') || briefContent;
+          const encoded = encodeURIComponent(brief);
           const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
+          localStorage.removeItem('nerlo_pending_brief');
+          localStorage.removeItem('nerlo_chat');
           window.open(url, '_blank');
           return;
         }
-        // Save brief and redirect to login
-        sessionStorage.setItem('nerlo_pending_brief', briefContent);
+        // Save brief and chat to localStorage, then redirect to login
+        localStorage.setItem('nerlo_pending_brief', briefContent);
+        localStorage.setItem('nerlo_chat', JSON.stringify(conversationHistory));
         window.location.href = '/login?redirect_url=' + encodeURIComponent('/');
       });
 
@@ -913,7 +918,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
   // Check for pending brief after login redirect
   window.addEventListener('load', async () => {
-    const pending = sessionStorage.getItem('nerlo_pending_brief');
+    const pending = localStorage.getItem('nerlo_pending_brief');
     if (!pending) return;
 
     // Wait up to 10s for the async Clerk script to attach window.Clerk
@@ -927,12 +932,27 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     await window.Clerk.load();
 
     if (window.Clerk.user) {
-      sessionStorage.removeItem('nerlo_pending_brief');
+      // Restore chat conversation before revealing the brief
+      const savedChat = localStorage.getItem('nerlo_chat');
+      if (savedChat) {
+        try {
+          const history = JSON.parse(savedChat);
+          conversationHistory = history;
+          innerEl.innerHTML = '';
+          for (const msg of history) {
+            if (msg.role === 'assistant' && msg.content.includes('NERLO_BRIEF_READY')) continue;
+            addBubble(msg.role === 'user' ? 'user' : 'nerlo', msg.content);
+          }
+        } catch {}
+        localStorage.removeItem('nerlo_chat');
+      }
+
       briefContent = pending;
       inputArea.style.display = 'none';
       revealBrief();
     } else {
-      sessionStorage.removeItem('nerlo_pending_brief');
+      localStorage.removeItem('nerlo_pending_brief');
+      localStorage.removeItem('nerlo_chat');
     }
   });
 </script>
