@@ -348,6 +348,15 @@
 
     .btn-build:hover { background: var(--cream); }
 
+    .build-alt {
+      font-size: 0.8rem;
+      color: var(--cream-dim);
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      transition: color 0.2s;
+    }
+    .build-alt:hover { color: var(--star); }
+
     .brief-bubble {
       background: var(--surface);
       border: 1px solid var(--border-strong);
@@ -780,8 +789,46 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     revealBrief();
   }
 
+  function recommendBuilder(brief) {
+    const text = brief.toLowerCase();
+    const hasPayments = /payment|stripe|checkout|subscription|billing/.test(text);
+    const hasAuth = /auth|login|sign.?in|user account|password/.test(text);
+    const hasMultipleRoles = (text.match(/user roles/i) && text.split('\n').filter(l => l.trim().startsWith('-') || l.trim().match(/^[a-z]/i)).length > 3);
+    const hasComplexData = /foreign key|relationship|one.to.many|many.to.many/.test(text);
+    const isFrontendOnly = /dashboard|component|ui tool|single user/.test(text) && !hasPayments && !hasAuth;
+    const isSimple = /prototype|demo|no auth|no login|simple/.test(text) && !hasPayments && !hasAuth && !hasComplexData;
+
+    if (hasPayments || (hasAuth && hasComplexData)) {
+      return {
+        primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'handles auth and payments natively — no extra setup needed.' },
+        secondary: { name: 'Bolt', url: (b) => 'https://bolt.new/?prompt=' + encodeURIComponent(b) }
+      };
+    }
+    if (isFrontendOnly) {
+      return {
+        primary: { name: 'v0', url: (b) => 'https://v0.dev/?q=' + encodeURIComponent(b), reason: 'built for frontend-first apps and delivers clean UI fast.' },
+        secondary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b) }
+      };
+    }
+    if (isSimple) {
+      return {
+        primary: { name: 'Bolt', url: (b) => 'https://bolt.new/?prompt=' + encodeURIComponent(b), reason: 'perfect for fast prototypes with zero setup.' },
+        secondary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b) }
+      };
+    }
+    // Default to Lovable
+    return {
+      primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'the strongest all-around choice for what you are building.' },
+      secondary: { name: 'Bolt', url: (b) => 'https://bolt.new/?prompt=' + encodeURIComponent(b) }
+    };
+  }
+
   function revealBrief() {
-    addBubble('nerlo', 'Your brief is ready. One click and we start building.');
+    const rec = recommendBuilder(briefContent);
+    const primary = rec.primary;
+    const secondary = rec.secondary;
+
+    addBubble('nerlo', 'Your brief is ready. Based on what you are building, ' + primary.name + ' ' + primary.reason + ' One click and we start building.');
 
     setTimeout(() => {
       const row = document.createElement('div');
@@ -789,26 +836,44 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
       const btn = document.createElement('button');
       btn.className = 'btn-build';
-      btn.textContent = 'Build this in Lovable →';
+      btn.textContent = 'Build this in ' + primary.name + ' →';
       btn.addEventListener('click', async () => {
-        if (window.Clerk) {
-          await window.Clerk.load();
-        }
+        if (window.Clerk) await window.Clerk.load();
+        const brief = localStorage.getItem('nerlo_pending_brief') || briefContent;
         if (window.Clerk && window.Clerk.user) {
-          const brief = localStorage.getItem('nerlo_pending_brief') || briefContent;
-          const encoded = encodeURIComponent(brief);
-          const url = 'https://lovable.dev/?autosubmit=true#prompt=' + encoded;
           localStorage.removeItem('nerlo_pending_brief');
           localStorage.removeItem('nerlo_chat');
-          window.open(url, '_blank');
+          window.open(primary.url(brief), '_blank');
           return;
         }
-        localStorage.setItem('nerlo_pending_brief', briefContent);
+        localStorage.setItem('nerlo_pending_brief', brief);
         localStorage.setItem('nerlo_chat', JSON.stringify(conversationHistory));
+        localStorage.setItem('nerlo_builder', 'primary');
+        window.location.href = '/login?redirect_url=' + encodeURIComponent('/');
+      });
+
+      const altLink = document.createElement('a');
+      altLink.className = 'build-alt';
+      altLink.textContent = 'or build in ' + secondary.name + ' →';
+      altLink.href = '#';
+      altLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (window.Clerk) await window.Clerk.load();
+        const brief = localStorage.getItem('nerlo_pending_brief') || briefContent;
+        if (window.Clerk && window.Clerk.user) {
+          localStorage.removeItem('nerlo_pending_brief');
+          localStorage.removeItem('nerlo_chat');
+          window.open(secondary.url(brief), '_blank');
+          return;
+        }
+        localStorage.setItem('nerlo_pending_brief', brief);
+        localStorage.setItem('nerlo_chat', JSON.stringify(conversationHistory));
+        localStorage.setItem('nerlo_builder', 'secondary');
         window.location.href = '/login?redirect_url=' + encodeURIComponent('/');
       });
 
       row.appendChild(btn);
+      row.appendChild(altLink);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 400);
