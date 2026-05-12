@@ -671,6 +671,17 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   }
 
   // Services detection
+  function isNegated(text, keyword) {
+    const negationPhrases = [
+      'no ' + keyword, 'no ' + keyword + 's',
+      'without ' + keyword, 'without ' + keyword + 's',
+      "don't need " + keyword, "don't want " + keyword,
+      "doesn't need " + keyword, "not " + keyword,
+      "won't need " + keyword, "no need for " + keyword
+    ];
+    return negationPhrases.some(phrase => text.includes(phrase));
+  }
+
   function detectServicesInMessage(text) {
     const lower = text.toLowerCase();
     const triggers = [
@@ -682,7 +693,9 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     const detected = [];
     for (const trigger of triggers) {
       if (shownServices.has(trigger.name)) continue;
-      if (!trigger.keywords.some(kw => lower.includes(kw))) continue;
+      const matched = trigger.keywords.filter(kw => lower.includes(kw));
+      if (!matched.length) continue;
+      if (matched.every(kw => isNegated(lower, kw))) continue;
       detected.push(trigger);
     }
     return detected;
@@ -791,8 +804,8 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
   function recommendBuilder(brief) {
     const text = brief.toLowerCase();
-    const hasPayments = /payment|stripe|checkout|subscription|billing/.test(text);
-    const hasAuth = /auth|login|sign.?in|user account|password/.test(text);
+    const hasPayments = /payment|stripe|checkout|subscription|billing/.test(text) && !isNegated(text, 'payment') && !isNegated(text, 'payments');
+    const hasAuth = /auth|login|sign.?in|user account|password/.test(text) && !isNegated(text, 'login') && !isNegated(text, 'auth');
     const hasMultipleRoles = (text.match(/user roles/i) && text.split('\n').filter(l => l.trim().startsWith('-') || l.trim().match(/^[a-z]/i)).length > 3);
     const hasComplexData = /foreign key|relationship|one.to.many|many.to.many/.test(text);
     const isFrontendOnly = /dashboard|component|ui tool|single user/.test(text) && !hasPayments && !hasAuth;
@@ -871,6 +884,20 @@ Framework, database, auth, hosting, and any external services. Since this is a w
         localStorage.setItem('nerlo_builder', 'secondary');
         window.location.href = '/login?redirect_url=' + encodeURIComponent('/');
       });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-alt';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.style.marginTop = '0.5rem';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem('nerlo_pending_brief');
+        localStorage.removeItem('nerlo_chat');
+        localStorage.removeItem('nerlo_builder');
+        resetConversation();
+      });
+      row.appendChild(startOver);
 
       row.appendChild(btn);
       row.appendChild(altLink);
