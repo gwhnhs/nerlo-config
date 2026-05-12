@@ -320,8 +320,8 @@
     .build-row {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 0.65rem;
+      align-items: center;
+      gap: 0.55rem;
       max-width: 680px;
       margin: 0 auto;
       padding: 0 1.25rem;
@@ -356,6 +356,16 @@
       transition: color 0.2s;
     }
     .build-alt:hover { color: var(--star); }
+
+    .build-start-over {
+      font-size: 0.72rem;
+      color: var(--border-strong);
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      margin-top: 0.35rem;
+      transition: color 0.2s;
+    }
+    .build-start-over:hover { color: var(--cream-dim); }
 
     .brief-bubble {
       background: var(--surface);
@@ -886,10 +896,9 @@ Framework, database, auth, hosting, and any external services. Since this is a w
       });
 
       const startOver = document.createElement('a');
-      startOver.className = 'build-alt';
+      startOver.className = 'build-start-over';
       startOver.textContent = 'start over with a new idea';
       startOver.href = '#';
-      startOver.style.marginTop = '0.5rem';
       startOver.addEventListener('click', (e) => {
         e.preventDefault();
         localStorage.removeItem('nerlo_pending_brief');
