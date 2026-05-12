@@ -33,6 +33,67 @@
       overflow-x: hidden;
     }
 
+    #intro-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+      pointer-events: none;
+    }
+
+    .intro-wordmark {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+
+    .intro-ner {
+      color: var(--star);
+      opacity: 0;
+      animation: introFadeIn 0.6s ease 0.3s forwards;
+    }
+
+    .intro-lo {
+      color: var(--cream);
+      opacity: 0;
+      animation: introFadeIn 0.6s ease 0.9s forwards;
+    }
+
+    .intro-tagline {
+      font-family: 'DM Sans', sans-serif;
+      font-size: clamp(0.85rem, 2.5vw, 1.05rem);
+      font-weight: 300;
+      color: var(--cream-dim);
+      letter-spacing: 0.01em;
+      opacity: 0;
+      animation: introFadeIn 0.6s ease 1.6s forwards;
+    }
+
+    @keyframes introFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes introFadeOut {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    .chat {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .chat.visible {
+      opacity: 1;
+    }
+
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -523,6 +584,12 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2307090f'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='20' fill='%238aabdc'>n</text></svg>">
 </head>
 <body>
+<div id="intro-overlay">
+  <div class="intro-wordmark">
+    <span class="intro-ner">ner</span><span class="intro-lo">lo</span>
+  </div>
+  <div class="intro-tagline">your idea deserves to exist.</div>
+</div>
 
 <nav>
   <a href="/" class="nav-logo"><span>ner</span><span>lo</span></a>
@@ -691,7 +758,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
   function renderWelcome() {
     innerEl.innerHTML = '';
-    addBubble('nerlo', 'Your idea deserves to exist.');
     setTimeout(() => {
       addBubble('nerlo', "Tell me what you want to build. Don't worry about getting it perfect — that's what I'm here for.");
     }, 350);
@@ -1159,8 +1225,29 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   sendEl.addEventListener('click', sendMessage);
 
   // Boot
-  renderWelcome();
-  setInputEnabled(true);
+  const chatEl = document.querySelector('.chat');
+  const overlay = document.getElementById('intro-overlay');
+  const hasPendingBrief = !!localStorage.getItem('nerlo_pending_brief');
+
+  if (hasPendingBrief) {
+    // Skip intro if returning from login
+    overlay.style.display = 'none';
+    chatEl.classList.add('visible');
+    renderWelcome();
+    setInputEnabled(false);
+  } else {
+    // Play intro animation
+    setInputEnabled(false);
+    setTimeout(() => {
+      overlay.style.animation = 'introFadeOut 0.6s ease forwards';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        chatEl.classList.add('visible');
+        renderWelcome();
+        setInputEnabled(true);
+      }, 600);
+    }, 2800);
+  }
 
   // Check for pending brief after login redirect
   window.addEventListener('load', async () => {
