@@ -317,6 +317,71 @@
     #send:disabled { opacity: 0.4; cursor: not-allowed; }
     #send svg { width: 14px; height: 14px; fill: var(--bg); }
 
+    @keyframes briefReveal {
+      from { opacity: 0; transform: translateY(10px) scale(0.99); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .brief-card {
+      align-self: stretch;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 14px;
+      padding: 1.25rem 1.35rem;
+      opacity: 0;
+      animation: briefReveal 0.45s ease forwards;
+      max-width: 680px;
+      width: 100%;
+    }
+
+    .brief-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+
+    .brief-card-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--star);
+    }
+
+    .brief-card-toggle {
+      font-size: 0.78rem;
+      color: var(--cream-dim);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-family: 'DM Sans', sans-serif;
+      transition: color 0.2s;
+    }
+    .brief-card-toggle:hover { color: var(--star); }
+
+    .brief-section {
+      margin-bottom: 0.85rem;
+    }
+    .brief-section:last-child { margin-bottom: 0; }
+
+    .brief-section-title {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--star-dim);
+      margin-bottom: 0.3rem;
+    }
+
+    .brief-section-body {
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    .brief-hidden { display: none; }
+
     .build-row {
       display: flex;
       flex-direction: column;
@@ -325,6 +390,8 @@
       max-width: 680px;
       margin: 0 auto;
       padding: 0 1.25rem;
+      opacity: 0;
+      animation: briefReveal 0.4s ease 0.2s forwards;
     }
 
     .build-label {
@@ -453,6 +520,7 @@
     src="https://generous-catfish-11.clerk.accounts.dev/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
     type="text/javascript">
   </script>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2307090f'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='20' fill='%238aabdc'>n</text></svg>">
 </head>
 <body>
 
@@ -853,6 +921,76 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
     addBubble('nerlo', 'Your brief is ready. Based on what you are building, ' + primary.name + ' is ' + primary.reason + ' One click and we start building.');
 
+    // Parse brief into sections
+    setTimeout(() => {
+      const sectionNames = ['PRODUCT VISION','USER ROLES','CORE DATA MODEL','KEY BEHAVIORS','EXPLICIT CONSTRAINTS','VISUAL DESIGN','SUCCESS CRITERIA','TECHNICAL NOTES'];
+      const sections = [];
+      let remaining = briefContent;
+
+      for (let i = 0; i < sectionNames.length; i++) {
+        const name = sectionNames[i];
+        const next = sectionNames[i + 1];
+        const start = remaining.indexOf(name);
+        if (start === -1) continue;
+        const contentStart = start + name.length;
+        const end = next ? remaining.indexOf(next, contentStart) : remaining.length;
+        const body = remaining.slice(contentStart, end !== -1 ? end : remaining.length).replace(/^\s*[\n:]+/, '').trim();
+        sections.push({ title: name, body });
+      }
+
+      // Build brief card
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+
+      const header = document.createElement('div');
+      header.className = 'brief-card-header';
+
+      const label = document.createElement('span');
+      label.className = 'brief-card-label';
+      label.textContent = 'your brief';
+
+      const toggle = document.createElement('button');
+      toggle.className = 'brief-card-toggle';
+      toggle.textContent = 'read full brief ↓';
+      let expanded = false;
+
+      header.appendChild(label);
+      header.appendChild(toggle);
+      card.appendChild(header);
+
+      sections.forEach((sec, i) => {
+        const section = document.createElement('div');
+        section.className = 'brief-section' + (i > 0 ? ' brief-hidden' : '');
+
+        const title = document.createElement('div');
+        title.className = 'brief-section-title';
+        title.textContent = sec.title;
+
+        const body = document.createElement('div');
+        body.className = 'brief-section-body';
+        body.textContent = sec.body;
+
+        section.appendChild(title);
+        section.appendChild(body);
+        card.appendChild(section);
+      });
+
+      toggle.addEventListener('click', () => {
+        expanded = !expanded;
+        const hiddenSections = card.querySelectorAll('.brief-section.brief-hidden, .brief-section:not(.brief-hidden)');
+        card.querySelectorAll('.brief-section').forEach((sec, i) => {
+          if (i === 0) return;
+          sec.classList.toggle('brief-hidden', !expanded);
+        });
+        toggle.textContent = expanded ? 'collapse ↑' : 'read full brief ↓';
+        if (expanded) scrollToBottom();
+      });
+
+      innerEl.appendChild(card);
+      scrollToBottom();
+    }, 500);
+
+    // Build buttons — fade in after card
     setTimeout(() => {
       const row = document.createElement('div');
       row.className = 'build-row';
@@ -906,12 +1044,13 @@ Framework, database, auth, hosting, and any external services. Since this is a w
         localStorage.removeItem('nerlo_builder');
         resetConversation();
       });
+
       row.appendChild(btn);
       row.appendChild(altLink);
       row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
-    }, 400);
+    }, 1000);
   }
 
   // Handle assistant response (shared by first and subsequent messages)
