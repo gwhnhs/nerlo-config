@@ -841,7 +841,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     const primary = rec.primary;
     const secondary = rec.secondary;
 
-    addBubble('nerlo', 'Your brief is ready. Based on what you are building, ' + primary.name + ' ' + primary.reason + ' One click and we start building.');
+    addBubble('nerlo', 'Your brief is ready. Based on what you are building, ' + primary.name + ' is ' + primary.reason + ' One click and we start building.');
 
     setTimeout(() => {
       const row = document.createElement('div');
@@ -897,10 +897,9 @@ Framework, database, auth, hosting, and any external services. Since this is a w
         localStorage.removeItem('nerlo_builder');
         resetConversation();
       });
-      row.appendChild(startOver);
-
       row.appendChild(btn);
       row.appendChild(altLink);
+      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 400);
