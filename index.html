@@ -948,13 +948,21 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
   function recommendBuilder(brief) {
     const text = brief.toLowerCase();
+
     const hasPayments = /payment|stripe|checkout|subscription|billing/.test(text) && !isNegated(text, 'payment') && !isNegated(text, 'payments');
     const hasAuth = /auth|login|sign.?in|user account|password/.test(text) && !isNegated(text, 'login') && !isNegated(text, 'auth');
-    const hasMultipleRoles = (text.match(/user roles/i) && text.split('\n').filter(l => l.trim().startsWith('-') || l.trim().match(/^[a-z]/i)).length > 3);
     const hasComplexData = /foreign key|relationship|one.to.many|many.to.many/.test(text);
-    const isFrontendOnly = /dashboard|component|ui tool|single user/.test(text) && !hasPayments && !hasAuth;
-    const isSimple = /prototype|demo|no auth|no login|simple/.test(text) && !hasPayments && !hasAuth && !hasComplexData;
+    const isGame = /\bgame\b|simulation|multiplayer|single.player|sandbox|gameplay|player|faction|creature|quest|level|score|leaderboard/.test(text);
+    const isFrontendOnly = /dashboard|component|ui tool/.test(text) && !hasPayments && !hasAuth && !isGame;
+    const isComplex = brief.length > 800;
+    const isSimple = /\bprototype\b|\bdemo\b|no auth|no login/.test(text) && !hasPayments && !hasAuth && !hasComplexData && !isGame && !isComplex;
 
+    if (isGame || isComplex) {
+      return {
+        primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'the strongest all-around choice for what you are building.' },
+        secondary: { name: 'Bolt', url: (b) => 'https://bolt.new/?prompt=' + encodeURIComponent(b) }
+      };
+    }
     if (hasPayments || (hasAuth && hasComplexData)) {
       return {
         primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'the right fit — it handles auth and payments natively with no extra setup.' },
@@ -973,7 +981,6 @@ Framework, database, auth, hosting, and any external services. Since this is a w
         secondary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b) }
       };
     }
-    // Default to Lovable
     return {
       primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'the strongest all-around choice for what you are building.' },
       secondary: { name: 'Bolt', url: (b) => 'https://bolt.new/?prompt=' + encodeURIComponent(b) }
