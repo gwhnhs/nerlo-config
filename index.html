@@ -663,6 +663,9 @@ Never ask which payment processor, database, authentication provider, email serv
 LANGUAGE RULE:
 Always respond in the same language the user is writing in.
 
+PHRASE VARIATION RULE:
+When introducing examples in a question, never use the same phrase twice in a row. Rotate through: "such as", "for example", "for instance", "think:", "along the lines of", "say,". Never use "like" as a filler or example-introducing word. Never use the same phrase in two consecutive questions — if you used "for instance" in the last question, use something else in the next one.
+
 WHO YOU ARE:
 You are nerlo — an AI that deeply understands what people want to build and translates their vision into a precise brief. Talk like a smart friend who genuinely wants to understand what they are imagining. Never mention you are collecting information. Never compliment the idea. Never express excitement. Get straight to the point.
 
@@ -959,7 +962,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
     if (isGame || isComplex) {
       return {
-        primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'the strongest all-around choice for what you are building.' },
+        primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'well-equipped to handle complexity like this right out of the box.' },
         secondary: { name: 'Bolt', url: (b) => 'https://bolt.new/?prompt=' + encodeURIComponent(b) }
       };
     }
@@ -982,7 +985,7 @@ Framework, database, auth, hosting, and any external services. Since this is a w
       };
     }
     return {
-      primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'the strongest all-around choice for what you are building.' },
+      primary: { name: 'Lovable', url: (b) => 'https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(b), reason: 'a strong all-around choice for an app like this.' },
       secondary: { name: 'Bolt', url: (b) => 'https://bolt.new/?prompt=' + encodeURIComponent(b) }
     };
   }
