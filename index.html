@@ -1256,23 +1256,26 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     }, 4200);
   }
 
-  // Check for pending brief after login redirect
   window.addEventListener('load', async () => {
     const pending = localStorage.getItem('nerlo_pending_brief');
     if (!pending) return;
 
-    // Wait up to 10s for the async Clerk script to attach window.Clerk
     const start = Date.now();
     while (!window.Clerk && Date.now() - start < 10000) {
       await new Promise(r => setTimeout(r, 100));
     }
-    if (!window.Clerk) return;
 
-    // Wait for Clerk to finish initializing (idempotent if auto-init already ran)
+    if (!window.Clerk) {
+      localStorage.removeItem('nerlo_pending_brief');
+      localStorage.removeItem('nerlo_chat');
+      renderWelcome();
+      setInputEnabled(true);
+      return;
+    }
+
     await window.Clerk.load();
 
     if (window.Clerk.user) {
-      // Restore chat conversation before revealing the brief
       const savedChat = localStorage.getItem('nerlo_chat');
       if (savedChat) {
         try {
@@ -1286,13 +1289,14 @@ Framework, database, auth, hosting, and any external services. Since this is a w
         } catch {}
         localStorage.removeItem('nerlo_chat');
       }
-
       briefContent = pending;
       inputArea.style.display = 'none';
       revealBrief();
     } else {
       localStorage.removeItem('nerlo_pending_brief');
       localStorage.removeItem('nerlo_chat');
+      renderWelcome();
+      setInputEnabled(true);
     }
   });
 </script>
