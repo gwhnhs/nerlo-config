@@ -1237,10 +1237,10 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   const hasPendingBrief = !!localStorage.getItem('nerlo_pending_brief');
 
   if (hasPendingBrief) {
-    // Skip intro if returning from login
+    // Skip intro if returning from login — do NOT call renderWelcome()
+    // The load handler below will restore the chat and reveal the brief
     overlay.style.display = 'none';
     chatEl.classList.add('visible');
-    renderWelcome();
     setInputEnabled(false);
   } else {
     // Play intro animation
