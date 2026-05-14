@@ -1071,39 +1071,19 @@ Framework, database, auth, hosting, and any external services. Since this is a w
       const btn = document.createElement('button');
       btn.className = 'btn-build';
       btn.textContent = 'Build this in ' + primary.name + ' →';
-      btn.addEventListener('click', async () => {
-        if (window.Clerk) await window.Clerk.load();
-        const brief = localStorage.getItem('nerlo_pending_brief') || briefContent;
-        if (window.Clerk && window.Clerk.user) {
-          localStorage.removeItem('nerlo_pending_brief');
-          localStorage.removeItem('nerlo_chat');
-          window.open(primary.url(brief), '_blank');
-          return;
-        }
-        localStorage.setItem('nerlo_pending_brief', brief);
-        localStorage.setItem('nerlo_chat', JSON.stringify(conversationHistory));
-        localStorage.setItem('nerlo_builder', 'primary');
-        window.location.href = '/login?redirect_url=' + encodeURIComponent('/');
+      btn.addEventListener('click', () => {
+        const brief = briefContent;
+        window.open(primary.url(brief), '_blank');
       });
 
       const altLink = document.createElement('a');
       altLink.className = 'build-alt';
       altLink.textContent = 'or build in ' + secondary.name + ' →';
       altLink.href = '#';
-      altLink.addEventListener('click', async (e) => {
+      altLink.addEventListener('click', (e) => {
         e.preventDefault();
-        if (window.Clerk) await window.Clerk.load();
-        const brief = localStorage.getItem('nerlo_pending_brief') || briefContent;
-        if (window.Clerk && window.Clerk.user) {
-          localStorage.removeItem('nerlo_pending_brief');
-          localStorage.removeItem('nerlo_chat');
-          window.open(secondary.url(brief), '_blank');
-          return;
-        }
-        localStorage.setItem('nerlo_pending_brief', brief);
-        localStorage.setItem('nerlo_chat', JSON.stringify(conversationHistory));
-        localStorage.setItem('nerlo_builder', 'secondary');
-        window.location.href = '/login?redirect_url=' + encodeURIComponent('/');
+        const brief = briefContent;
+        window.open(secondary.url(brief), '_blank');
       });
 
       const startOver = document.createElement('a');
