@@ -1275,6 +1275,16 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
     await window.Clerk.load();
 
+    // In Clerk's dev cross-origin flow (pk_test_*), the client/session/user
+    // are hydrated by an async FAPI fetch that completes AFTER load() resolves.
+    // We only reach this code with a pending brief, meaning the user just
+    // returned from /login — poll briefly for the session to hydrate before
+    // falling back to welcome.
+    const userWaitStart = Date.now();
+    while (!window.Clerk.user && Date.now() - userWaitStart < 5000) {
+      await new Promise(r => setTimeout(r, 50));
+    }
+
     if (window.Clerk.user) {
       const savedChat = localStorage.getItem('nerlo_chat');
       if (savedChat) {
