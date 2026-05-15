@@ -699,6 +699,20 @@ One or two sentences defining what "working" looks like from the user's point of
 TECHNICAL NOTES
 Framework, database, auth, hosting, and any external services. Since this is a web product with no specific builder selected yet, write: "Stack to be determined based on builder platform chosen." Do not recommend any specific external services — the user will choose their builder after seeing the brief.`;
 
+  const SYSTEM_EDIT = `You read a product brief and a change request, then produce a single Lovable prompt that applies the change.
+
+The brief the user already built:
+{{BRIEF}}
+
+When the user describes a change, output the exact prompt they should paste into Lovable's chat to apply it.
+
+Rules — no exceptions:
+- Output the prompt text only. No preamble, no explanation, no markdown, no quoting.
+- Describe only the change. Do not restate the brief.
+- Write in the imperative, as if instructing a developer.
+- Be concise and actionable.
+- Never ask follow-up questions. Produce the prompt in a single response.`;
+
   const MARKET_SYSTEM = 'You analyze app ideas and assess market saturation. Respond with ONLY valid JSON: {"verdict":"saturated"|"competitive"|"clear","competitors":["Name1","Name2","Name3"]}. saturated = many established players dominating the exact space. competitive = established players exist but room for differentiation. clear = no dominant players or genuinely novel idea. Be accurate — most ideas are competitive, not saturated.';
 
   // State
@@ -709,6 +723,8 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   let shownServices = new Set();
   let awaitingServiceConfirmation = false;
   let briefContent = null;
+  let editMode = false;
+  let editCount = 0;
 
   // DOM
   const messagesEl = document.getElementById('messages');
@@ -773,6 +789,9 @@ Framework, database, auth, hosting, and any external services. Since this is a w
     shownServices = new Set();
     awaitingServiceConfirmation = false;
     briefContent = null;
+    editMode = false;
+    editCount = 0;
+    inputEl.placeholder = 'tell me what you want to build...';
     inputArea.style.display = '';
     renderWelcome();
     setInputEnabled(true);
@@ -1089,6 +1108,16 @@ Framework, database, auth, hosting, and any external services. Since this is a w
         window.open(secondary.url(brief), '_blank');
       });
 
+      const requestEdit = document.createElement('a');
+      requestEdit.className = 'build-start-over';
+      requestEdit.textContent = 'request an edit →';
+      requestEdit.href = '#';
+      requestEdit.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.target.closest('.build-row')?.remove();
+        enterEditMode();
+      });
+
       const startOver = document.createElement('a');
       startOver.className = 'build-start-over';
       startOver.textContent = 'start over with a new idea';
@@ -1103,10 +1132,111 @@ Framework, database, auth, hosting, and any external services. Since this is a w
 
       row.appendChild(btn);
       row.appendChild(altLink);
+      row.appendChild(requestEdit);
       row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
+  }
+
+  function enterEditMode() {
+    editMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendEditMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_EDIT.replace('{{BRIEF}}', () => briefContent);
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'Something went wrong. Try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const editPrompt = (data.content[0].text || '').trim();
+    editCount++;
+    editMode = false;
+    inputArea.style.display = 'none';
+    showEditResult(editPrompt);
+  }
+
+  function showEditResult(editPrompt) {
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'edit prompt';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'brief-section-body';
+    body.textContent = editPrompt;
+    card.appendChild(body);
+
+    innerEl.appendChild(card);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const sendBtn = document.createElement('button');
+    sendBtn.className = 'btn-build';
+    sendBtn.textContent = 'send to Lovable →';
+    sendBtn.addEventListener('click', () => {
+      window.open('https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(editPrompt), '_blank');
+    });
+
+    const anotherEdit = document.createElement('a');
+    anotherEdit.className = 'build-start-over';
+    anotherEdit.textContent = 'request another edit →';
+    anotherEdit.href = '#';
+    anotherEdit.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.target.closest('.build-row')?.remove();
+      enterEditMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('nerlo_pending_brief');
+      localStorage.removeItem('nerlo_chat');
+      localStorage.removeItem('nerlo_builder');
+      resetConversation();
+    });
+
+    row.appendChild(sendBtn);
+    row.appendChild(anotherEdit);
+    row.appendChild(startOver);
+
+    if (editCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.style.marginTop = '0.75rem';
+      warning.textContent = "heads up — you've made a few edits. if Lovable starts producing unexpected results, it may be running low on context. starting a fresh build from an updated brief can help.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
   }
 
   // Handle assistant response (shared by first and subsequent messages)
@@ -1133,10 +1263,16 @@ Framework, database, auth, hosting, and any external services. Since this is a w
   // Main send flow
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isTyping || briefContent) return;
+    if (!text || isTyping || (briefContent && !editMode)) return;
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
+
+    if (editMode) {
+      await sendEditMessage(text);
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
