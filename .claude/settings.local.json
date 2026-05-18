@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(git *)",
-      "PowerShell(Get-ChildItem C:\\\\Users\\\\hardo\\\\Downloads | Where-Object { $_.PSIsContainer } | Select-Object Name)"
+      "PowerShell(Get-ChildItem C:\\\\Users\\\\hardo\\\\Downloads | Where-Object { $_.PSIsContainer } | Select-Object Name)",
+      "Bash(node *)",
+      "WebSearch",
+      "Skill(andrej-karpathy-skills:karpathy-guidelines)"
     ]
   }
 }
