@@ -1248,6 +1248,21 @@ Rules — no exceptions:
     scrollToBottom();
   }
 
+  // The model occasionally echoes the buildSystemPrompt() topics preamble
+  // back as the start of its reply. Strip it before rendering or pushing
+  // to conversationHistory — otherwise it leaks into the UI and gets fed
+  // back into the next request as a prior assistant turn.
+  function stripLeakedTopicsBlock(text) {
+    if (!text || !text.includes('TOPICS ALREADY DECIDED')) return text;
+    const headerIdx = text.indexOf('TOPICS ALREADY DECIDED');
+    const endMarker = 'critical failure.';
+    const endIdx = text.indexOf(endMarker, headerIdx);
+    const cleaned = endIdx !== -1
+      ? text.slice(0, headerIdx) + text.slice(endIdx + endMarker.length)
+      : text.slice(0, headerIdx);
+    return cleaned.trim();
+  }
+
   // Handle assistant response (shared by first and subsequent messages)
   async function deliverAssistantResponse(data) {
     hideTyping();
@@ -1256,7 +1271,12 @@ Rules — no exceptions:
       setInputEnabled(true);
       return;
     }
-    const text = data.content[0].text || '';
+    const text = stripLeakedTopicsBlock(data.content[0].text || '');
+    if (!text) {
+      addBubble('nerlo', 'Something went wrong. Try again?');
+      setInputEnabled(true);
+      return;
+    }
     const brief = tryParseBrief(text);
     if (brief) {
       conversationHistory.push({ role: 'assistant', content: text });
