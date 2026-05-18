@@ -1424,6 +1424,49 @@ Rules — no exceptions:
     }, 4200);
   }
 
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+      if (localStorage.getItem('nerlo_pending_brief')) return;
+
+      const nerEl = document.querySelector('.intro-ner');
+      const loEl = document.querySelector('.intro-lo');
+      const taglineEl = document.querySelector('.intro-tagline');
+
+      // reset animated children to pre-animation state
+      [nerEl, loEl, taglineEl].forEach(el => {
+        el.style.animation = 'none';
+        el.style.opacity = '0';
+      });
+
+      // restore overlay to initial visible full-screen state
+      overlay.style.display = '';
+      overlay.style.animation = '';
+
+      // hide chat beneath the overlay
+      chatEl.classList.remove('visible');
+
+      // flush the animation-none override before releasing CSS animations
+      void overlay.offsetHeight;
+
+      // release inline overrides — CSS keyframe animations re-trigger with original delays
+      [nerEl, loEl, taglineEl].forEach(el => {
+        el.style.animation = '';
+        el.style.opacity = '';
+      });
+
+      setInputEnabled(false);
+      setTimeout(() => {
+        overlay.style.animation = 'introFadeOut 0.6s ease forwards';
+        setTimeout(() => {
+          overlay.style.display = 'none';
+          chatEl.classList.add('visible');
+          renderWelcome();
+          setInputEnabled(true);
+        }, 600);
+      }, 4200);
+    }
+  });
+
   window.addEventListener('load', async () => {
     const pending = localStorage.getItem('nerlo_pending_brief');
     if (!pending) return;
