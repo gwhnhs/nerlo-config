@@ -1193,10 +1193,18 @@ Rules — no exceptions:
 
     const sendBtn = document.createElement('button');
     sendBtn.className = 'btn-build';
-    sendBtn.textContent = 'send to Lovable →';
+    sendBtn.textContent = 'copy edit prompt';
     sendBtn.addEventListener('click', () => {
-      window.open('https://lovable.dev/?autosubmit=true#prompt=' + encodeURIComponent(editPrompt), '_blank');
+      navigator.clipboard.writeText(editPrompt).then(() => {
+        sendBtn.textContent = 'copied ✓';
+        setTimeout(() => { sendBtn.textContent = 'copy edit prompt'; }, 2000);
+      });
     });
+
+    const pasteHint = document.createElement('span');
+    pasteHint.className = 'build-start-over';
+    pasteHint.style.cursor = 'default';
+    pasteHint.textContent = 'paste this into your Lovable chat to make the change';
 
     const anotherEdit = document.createElement('a');
     anotherEdit.className = 'build-start-over';
@@ -1221,6 +1229,7 @@ Rules — no exceptions:
     });
 
     row.appendChild(sendBtn);
+    row.appendChild(pasteHint);
     row.appendChild(anotherEdit);
     row.appendChild(startOver);
 
