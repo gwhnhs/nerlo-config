@@ -955,9 +955,9 @@ Rules — no exceptions:
     }
     setTimeout(() => {
       if (mode === 'app') {
-        addBubble('nerlo', "tell me what you want to build. don't worry about getting it perfect — that's what I'm here for.");
+        addBubble('nerlo', "Tell me what you want to build. Don't worry about getting it perfect — that's what I'm here for.");
       } else {
-        addBubble('nerlo', "describe what you want to see. don't worry about getting it perfect — that's what I'm here for.");
+        addBubble('nerlo', "Describe what you want to see. Don't worry about getting it perfect — that's what I'm here for.");
       }
       setInputEnabled(true);
     }, 350);
@@ -1035,10 +1035,10 @@ Rules — no exceptions:
   function detectServicesInMessage(text) {
     const lower = text.toLowerCase();
     const triggers = [
-      { keywords: ['pay', 'payment', 'payments', 'charge', 'subscription', 'billing'], name: 'Payments', why: 'online payment processing requires a separate Stripe account.', url: 'https://stripe.com' },
-      { keywords: ['email', 'send them', 'confirmation email', 'reminder email', 'email notification'], name: 'Email Sending', why: 'sending transactional emails requires a Resend account.', url: 'https://resend.com' },
-      { keywords: ['sms', 'text message', 'text them', 'text reminder'], name: 'SMS Messaging', why: 'sending text messages requires a Twilio account.', url: 'https://twilio.com' },
-      { keywords: ['map', 'maps', 'directions', 'routing'], name: 'Map Display', why: 'showing a live map requires a Google Maps API key.', url: 'https://developers.google.com/maps' }
+      { keywords: ['pay', 'payment', 'payments', 'charge', 'subscription', 'billing'], name: 'Payments', why: 'Online payment processing requires a separate Stripe account.', url: 'https://stripe.com' },
+      { keywords: ['email', 'send them', 'confirmation email', 'reminder email', 'email notification'], name: 'Email Sending', why: 'Sending transactional emails requires a Resend account.', url: 'https://resend.com' },
+      { keywords: ['sms', 'text message', 'text them', 'text reminder'], name: 'SMS Messaging', why: 'Sending text messages requires a Twilio account.', url: 'https://twilio.com' },
+      { keywords: ['map', 'maps', 'directions', 'routing'], name: 'Map Display', why: 'Showing a live map requires a Google Maps API key.', url: 'https://developers.google.com/maps' }
     ];
     const detected = [];
     for (const trigger of triggers) {
@@ -1056,7 +1056,7 @@ Rules — no exceptions:
     const el = document.createElement('div');
     el.className = 'note';
     const safeUrl = service.url.replace(/"/g, '&quot;');
-    el.innerHTML = `one thing worth knowing — <span class="note-name">${escapeHtml(service.name)}</span> will need a separate account. ${escapeHtml(service.why)} <a href="${safeUrl}" target="_blank" rel="noopener">get started →</a>`;
+    el.innerHTML = `One thing worth knowing — <span class="note-name">${escapeHtml(service.name)}</span> will need a separate account. ${escapeHtml(service.why)} <a href="${safeUrl}" target="_blank" rel="noopener">Get started →</a>`;
     innerEl.appendChild(el);
     scrollToBottom();
   }
@@ -1071,11 +1071,11 @@ Rules — no exceptions:
       const card = document.createElement('div');
       card.className = 'card';
       const competitorsLine = competitors && competitors.length
-        ? '<div style="margin-top:0.55rem;font-size:0.82rem;color:var(--text);">established players: ' + competitors.map(escapeHtml).join(' · ') + '</div>'
+        ? '<div style="margin-top:0.55rem;font-size:0.82rem;color:var(--text);">Established players: ' + competitors.map(escapeHtml).join(' · ') + '</div>'
         : '';
       const message = verdict === 'saturated'
-        ? 'this space is crowded. strong existing players already dominate it.'
-        : 'there are established players here, but there is room for a different angle.';
+        ? 'This space is crowded. Strong existing players already dominate it.'
+        : 'There are established players here, but there is room for a different angle.';
       card.innerHTML = `
         <div class="card-label">heads up</div>
         <div class="card-title">${escapeHtml(message)}</div>
@@ -1113,7 +1113,7 @@ Rules — no exceptions:
       `).join('');
       card.innerHTML = `
         <div class="card-label">heads up</div>
-        <div class="card-title">your idea will need a few external accounts.</div>
+        <div class="card-title">Your idea will need a few external accounts.</div>
         <ul class="card-list">${items}</ul>
         <div class="card-actions">
           <button class="btn btn-primary" data-act="continue">keep going</button>
@@ -1210,7 +1210,7 @@ Rules — no exceptions:
     const primary = rec.primary;
     const secondary = rec.secondary;
 
-    addBubble('nerlo', 'your brief is ready. based on what you are building, ' + primary.name + ' is ' + primary.reason + ' one click and we start building.');
+    addBubble('nerlo', 'Your brief is ready. Based on what you are building, ' + primary.name + ' is ' + primary.reason + ' One click and we start building.');
 
     // Parse brief into sections
     setTimeout(() => {
@@ -1340,7 +1340,7 @@ Rules — no exceptions:
     const toolLabel = IMAGE_TOOL_LABELS[payload.tool] || payload.tool;
     const toolUrl = IMAGE_TOOL_URLS[payload.tool] || 'https://www.midjourney.com';
 
-    addBubble('nerlo', 'your prompt is ready. based on what you are creating, ' + toolLabel + ' is ' + payload.reason + ' copy the prompt and paste it in.');
+    addBubble('nerlo', 'Your prompt is ready. Based on what you are creating, ' + toolLabel + ' is ' + payload.reason + ' Copy the prompt and paste it in.');
 
     setTimeout(() => {
       const card = document.createElement('div');
@@ -1524,7 +1524,7 @@ Rules — no exceptions:
       warning.style.maxWidth = '420px';
       warning.style.textAlign = 'center';
       warning.style.lineHeight = '1.5';
-      warning.textContent = "heads up — after several tweaks, starting fresh with a new description often produces better results than continuing to refine.";
+      warning.textContent = "Heads up — after several tweaks, starting fresh with a new description often produces better results than continuing to refine.";
       row.appendChild(warning);
     }
 
@@ -1633,7 +1633,7 @@ Rules — no exceptions:
       warning.style.textAlign = 'center';
       warning.style.lineHeight = '1.5';
       warning.style.marginTop = '0.75rem';
-      warning.textContent = "heads up — you've made a few edits. if Lovable starts producing unexpected results, it may be running low on context. starting a fresh build from an updated brief can help.";
+      warning.textContent = "Heads up — you've made a few edits. If Lovable starts producing unexpected results, it may be running low on context. Starting a fresh build from an updated brief can help.";
       row.appendChild(warning);
     }
 
