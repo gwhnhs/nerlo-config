@@ -903,8 +903,60 @@ Rules — no exceptions:
 
   function renderWelcome() {
     innerEl.innerHTML = '';
+    inputArea.style.display = 'none';
     setTimeout(() => {
-      addBubble('nerlo', "Tell me what you want to build. Don't worry about getting it perfect — that's what I'm here for.");
+      const el = document.createElement('div');
+      el.className = 'bubble nerlo';
+      el.textContent = "what are you making today?";
+      innerEl.appendChild(el);
+      scrollToBottom();
+
+      setTimeout(() => {
+        const card = document.createElement('div');
+        card.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;align-self:flex-start;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
+
+        const appBtn = document.createElement('button');
+        appBtn.className = 'btn btn-primary';
+        appBtn.textContent = 'build an app';
+        appBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        appBtn.addEventListener('click', () => {
+          card.remove();
+          selectMode('app');
+        });
+
+        const imgBtn = document.createElement('button');
+        imgBtn.className = 'btn btn-primary';
+        imgBtn.textContent = 'generate an image';
+        imgBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        imgBtn.addEventListener('click', () => {
+          card.remove();
+          selectMode('image');
+        });
+
+        card.appendChild(appBtn);
+        card.appendChild(imgBtn);
+        innerEl.appendChild(card);
+        scrollToBottom();
+      }, 400);
+    }, 350);
+  }
+
+  function selectMode(mode) {
+    currentMode = mode;
+    addBubble('user', mode === 'app' ? 'build an app' : 'generate an image');
+    inputArea.style.display = '';
+    if (mode === 'app') {
+      inputEl.placeholder = 'tell me what you want to build...';
+    } else {
+      inputEl.placeholder = 'describe what you want to see...';
+    }
+    setTimeout(() => {
+      if (mode === 'app') {
+        addBubble('nerlo', "Tell me what you want to build. Don't worry about getting it perfect — that's what I'm here for.");
+      } else {
+        addBubble('nerlo', "describe what you want to see. don't worry about getting it perfect — that's what I'm here for.");
+      }
+      setInputEnabled(true);
     }, 350);
   }
 
@@ -917,10 +969,12 @@ Rules — no exceptions:
     briefContent = null;
     editMode = false;
     editCount = 0;
+    currentMode = null;
+    imagePayload = null;
+    imageTweakMode = false;
+    imageTweakCount = 0;
     inputEl.placeholder = 'tell me what you want to build...';
-    inputArea.style.display = '';
     renderWelcome();
-    setInputEnabled(true);
   }
 
   // API
@@ -942,7 +996,8 @@ Rules — no exceptions:
     const topicsBlock = answeredTopics.length
       ? 'TOPICS ALREADY DECIDED — DO NOT ASK ABOUT THESE AGAIN:\n' + answeredTopics.map(t => '- ' + t).join('\n') + '\n\nEvery item on this list has already been answered. Asking about any of these topics again is a critical failure.\n\n'
       : '';
-    return topicsBlock + SYSTEM_INTAKE;
+    const base = currentMode === 'image' ? SYSTEM_IMAGE_GEN : SYSTEM_INTAKE;
+    return topicsBlock + base;
   }
 
   // Topic extraction
@@ -1077,6 +1132,18 @@ Rules — no exceptions:
   // Brief detection + display
   function tryParseBrief(text) {
     if (!text || !text.includes('NERLO_BRIEF_READY')) return null;
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  function tryParseImagePrompt(text) {
+    if (!text || !text.includes('NERLO_IMAGE_PROMPT_READY')) return null;
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
     if (start < 0 || end <= start) return null;
@@ -1265,6 +1332,203 @@ Rules — no exceptions:
     }, 1000);
   }
 
+  function revealImagePrompt(payload) {
+    imagePayload = payload;
+    const toolLabel = IMAGE_TOOL_LABELS[payload.tool] || payload.tool;
+    const toolUrl = IMAGE_TOOL_URLS[payload.tool] || 'https://www.midjourney.com';
+
+    addBubble('nerlo', 'your prompt is ready. based on what you are creating, ' + toolLabel + ' is ' + payload.reason + ' copy the prompt and paste it in.');
+
+    setTimeout(() => {
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+
+      const header = document.createElement('div');
+      header.className = 'brief-card-header';
+
+      const label = document.createElement('span');
+      label.className = 'brief-card-label';
+      label.textContent = 'your prompt';
+      header.appendChild(label);
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'brief-section-body';
+      body.textContent = payload.prompt;
+      card.appendChild(body);
+
+      innerEl.appendChild(card);
+      scrollToBottom();
+    }, 500);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-build';
+      copyBtn.textContent = 'copy prompt';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(payload.prompt).then(() => {
+          copyBtn.textContent = 'copied ✓';
+          setTimeout(() => { copyBtn.textContent = 'copy prompt'; }, 2000);
+        });
+      });
+
+      const openLink = document.createElement('a');
+      openLink.className = 'build-alt';
+      openLink.textContent = 'open ' + toolLabel + ' →';
+      openLink.href = '#';
+      openLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigator.clipboard.writeText(payload.prompt);
+        window.open(toolUrl, '_blank');
+      });
+
+      const tweakLink = document.createElement('a');
+      tweakLink.className = 'build-start-over';
+      tweakLink.textContent = 'request a tweak →';
+      tweakLink.href = '#';
+      tweakLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.target.closest('.build-row')?.remove();
+        enterImageTweakMode();
+      });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-start-over';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetConversation();
+      });
+
+      row.appendChild(copyBtn);
+      row.appendChild(openLink);
+      row.appendChild(tweakLink);
+      row.appendChild(startOver);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function enterImageTweakMode() {
+    imageTweakMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendImageTweakMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_IMAGE_TWEAK
+      .replace('{{PROMPT}}', () => imagePayload.prompt)
+      .replace('{{TOOL}}', () => imagePayload.tool);
+
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'Something went wrong. Try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const revised = (data.content[0].text || '').trim();
+    imageTweakCount++;
+    imageTweakMode = false;
+    inputArea.style.display = 'none';
+    imagePayload = { ...imagePayload, prompt: revised };
+    showImageTweakResult(revised);
+  }
+
+  function showImageTweakResult(revised) {
+    const toolLabel = IMAGE_TOOL_LABELS[imagePayload.tool] || imagePayload.tool;
+    const toolUrl = IMAGE_TOOL_URLS[imagePayload.tool] || 'https://www.midjourney.com';
+
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'revised prompt';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'brief-section-body';
+    body.textContent = revised;
+    card.appendChild(body);
+
+    innerEl.appendChild(card);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-build';
+    copyBtn.textContent = 'copy prompt';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(revised).then(() => {
+        copyBtn.textContent = 'copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'copy prompt'; }, 2000);
+      });
+    });
+
+    const openLink = document.createElement('a');
+    openLink.className = 'build-alt';
+    openLink.textContent = 'open ' + toolLabel + ' →';
+    openLink.href = '#';
+    openLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigator.clipboard.writeText(revised);
+      window.open(toolUrl, '_blank');
+    });
+
+    const anotherTweak = document.createElement('a');
+    anotherTweak.className = 'build-start-over';
+    anotherTweak.textContent = 'request another tweak →';
+    anotherTweak.href = '#';
+    anotherTweak.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.target.closest('.build-row')?.remove();
+      enterImageTweakMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetConversation();
+    });
+
+    row.appendChild(copyBtn);
+    row.appendChild(openLink);
+    row.appendChild(anotherTweak);
+    row.appendChild(startOver);
+
+    if (imageTweakCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.textContent = "heads up — after several tweaks, starting fresh with a new description often produces better results than continuing to refine.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
+  }
+
   function enterEditMode() {
     editMode = true;
     inputEl.placeholder = 'what would you like to change?';
@@ -1409,6 +1673,13 @@ Rules — no exceptions:
       showBrief(brief.brief || '');
       return;
     }
+    const imagePrompt = tryParseImagePrompt(text);
+    if (imagePrompt) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      inputArea.style.display = 'none';
+      revealImagePrompt(imagePrompt);
+      return;
+    }
     addBubble('nerlo', text);
     conversationHistory.push({ role: 'assistant', content: text });
     extractTopic();
@@ -1418,7 +1689,7 @@ Rules — no exceptions:
   // Main send flow
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isTyping || (briefContent && !editMode)) return;
+    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode)) return;
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
@@ -1428,12 +1699,23 @@ Rules — no exceptions:
       return;
     }
 
+    if (imageTweakMode) {
+      await sendImageTweakMessage(text);
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
 
     const isFirst = !marketChecked;
     showTyping();
+
+    if (currentMode === 'image') {
+      const intakeData = await callAPI(buildSystemPrompt(), conversationHistory.map(m => ({ role: m.role, content: m.content })));
+      await deliverAssistantResponse(intakeData);
+      return;
+    }
 
     if (isFirst) {
       marketChecked = true;
