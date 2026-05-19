@@ -1343,6 +1343,16 @@ Rules — no exceptions:
 
     addBubble('nerlo', 'Your prompt is ready. Based on what you are creating, ' + toolLabel + ' is ' + payload.reason + ' Copy the prompt and paste it in.');
 
+    if (payload.tool === 'midjourney') {
+      setTimeout(() => {
+        const note = document.createElement('div');
+        note.className = 'note';
+        note.innerHTML = 'One thing worth knowing — <span class="note-name">Midjourney</span> requires a paid subscription and runs through Discord. If you don\'t have an account yet, <a href="https://www.midjourney.com" target="_blank" rel="noopener">get started here →</a>';
+        innerEl.appendChild(note);
+        scrollToBottom();
+      }, 300);
+    }
+
     setTimeout(() => {
       const card = document.createElement('div');
       card.className = 'brief-card';
