@@ -603,7 +603,7 @@
 
   <div class="input-area" id="input-area">
     <div class="input-inner">
-      <textarea id="input" rows="1" placeholder="tell me what you want to build..." autocomplete="off" spellcheck="true"></textarea>
+      <textarea id="input" rows="1" placeholder="tell me what you want to create..." autocomplete="off" spellcheck="true"></textarea>
       <button id="send" aria-label="send">
         <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
       </button>
@@ -911,7 +911,7 @@ Rules — no exceptions:
     setTimeout(() => {
       const el = document.createElement('div');
       el.className = 'bubble nerlo';
-      el.textContent = "what are you making today?";
+      el.textContent = "What are you creating today?";
       innerEl.appendChild(el);
       scrollToBottom();
 
@@ -921,7 +921,7 @@ Rules — no exceptions:
 
         const appBtn = document.createElement('button');
         appBtn.className = 'btn btn-primary';
-        appBtn.textContent = 'build an app';
+        appBtn.textContent = 'Build an app';
         appBtn.style.cssText = 'text-align:left;border-radius:100px;';
         appBtn.addEventListener('click', () => {
           card.remove();
@@ -930,7 +930,7 @@ Rules — no exceptions:
 
         const imgBtn = document.createElement('button');
         imgBtn.className = 'btn btn-primary';
-        imgBtn.textContent = 'generate an image';
+        imgBtn.textContent = 'Generate an image';
         imgBtn.style.cssText = 'text-align:left;border-radius:100px;';
         imgBtn.addEventListener('click', () => {
           card.remove();
