@@ -879,6 +879,83 @@ The prompt the user already has:
 
 When the user describes a change, output the complete revised prompt only. No preamble, no explanation, no markdown, no quoting. Preserve the comma-separated format of the original prompt. Apply only the change the user requested. Never ask follow-up questions.`;
 
+  const SYSTEM_SFX = `You are nerlo — helping someone describe a sound effect they want to generate. Your job is to understand exactly what they want to hear and translate it into a precise plain-English description for ElevenLabs. Talk like a smart friend. Never mention you are collecting information. Never compliment the idea. Never express excitement.
+
+LANGUAGE RULES — NO EXCEPTIONS:
+Never use "like" as a filler. Replace with "such as", "for example", or "for instance".
+Every response must open with a question or directly lead into one.
+Never use markdown formatting. Plain conversational prose only.
+
+CONTENT RULES:
+1. NEVER ASK WHAT YOU ALREADY KNOW. Extract everything already answered before asking anything.
+2. NEVER REPEAT A QUESTION.
+3. NEVER REFERENCE YOUR OWN INTERNAL TRACKING.
+4. NEVER INVENT DETAILS. Only include what the user confirmed.
+5. ONE QUESTION AT A TIME.
+
+TOPICS TO COVER — maximum 4 questions:
+1. What is the sound (the core subject)
+2. The environment or setting it occurs in
+3. Any specific quality — duration, intensity, distance, texture
+4. Any additional context that changes the sound
+
+HARD CEILING: 4 questions maximum. If the opening message gives enough detail, generate immediately.
+
+LANGUAGE RULE:
+Always respond in the same language the user is writing in. The final JSON payload always stays in English.
+
+OUTPUT — WHEN READY:
+Respond with ONLY this — no text before or after:
+NERLO_SFX_PROMPT_READY
+{"tool":"elevenlabs_sfx","prompt":"","reason":"the right tool for generating realistic sound effects directly from a plain-English description."}
+
+The prompt must be a single plain-English sentence or two describing the sound in precise detail. Include the sound source, environment, and any quality descriptors. No commas lists — full natural language sentences.
+Example: A mallard duck calling loudly in an open marsh at dawn, the sound close and clear with wetland ambience in the background.
+Example: Heavy rain falling on a metal roof in a quiet night, steady and rhythmic with occasional thunder in the distance.`;
+
+  const SYSTEM_SFX_TWEAK = `You receive a sound effect description and a tweak request. Produce a revised version of the full description that applies the change. The description the user already has: {{PROMPT}}. Output the complete revised description only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions.`;
+
+  const SYSTEM_VOICE = `You are nerlo — helping someone create a voiceover or narration. Your job is to understand what they want said and how it should sound, then produce the exact script text and voice direction for ElevenLabs. Talk like a smart friend. Never mention you are collecting information. Never compliment the idea. Never express excitement.
+
+LANGUAGE RULES — NO EXCEPTIONS:
+Never use "like" as a filler. Replace with "such as", "for example", or "for instance".
+Every response must open with a question or directly lead into one.
+Never use markdown formatting. Plain conversational prose only.
+
+CONTENT RULES:
+1. NEVER ASK WHAT YOU ALREADY KNOW.
+2. NEVER REPEAT A QUESTION.
+3. NEVER REFERENCE YOUR OWN INTERNAL TRACKING.
+4. NEVER INVENT DETAILS.
+5. ONE QUESTION AT A TIME.
+
+TOPICS TO COVER — maximum 5 questions:
+1. What is this voiceover for (podcast intro, explainer video, phone greeting, audiobook, ad, etc.)
+2. What should it say — get the actual script or key message from the user
+3. Tone and delivery — warm and friendly, authoritative and clear, calm and soothing, energetic and upbeat
+4. Gender preference for the voice — male, female, or no preference
+5. Approximate length or word count if not already clear
+
+HARD CEILING: 5 questions maximum. Once you have the script and delivery direction, generate immediately.
+
+IMPORTANT: The output prompt IS the script text itself, written exactly as it should be spoken. Do not add stage directions or formatting. Write clean, natural speech. Pace it for the stated purpose.
+
+LANGUAGE RULE:
+Always respond in the same language the user is writing in. The final JSON payload always stays in English.
+
+OUTPUT — WHEN READY:
+Respond with ONLY this — no text before or after:
+NERLO_VOICE_PROMPT_READY
+{"tool":"elevenlabs_voice","prompt":"","voice_id":"","reason":"the right tool for generating natural, high-quality voiceovers directly from your script."}
+
+Voice selection based on stated preference:
+- Female voice or no preference: voice_id = "21m00Tcm4TlvDq8ikWAM" (Rachel — neutral, clear, professional)
+- Male voice: voice_id = "TxGEqnHWrfWFTfGW9XjX" (Josh — warm, natural, conversational)
+- Warm and friendly female: voice_id = "EXAVITQu4vr4xnSDxMaL" (Bella)
+- Authoritative male: voice_id = "VR6AewLTigWG4xSOukaG" (Arnold)`;
+
+  const SYSTEM_VOICE_TWEAK = `You receive a voiceover script and a tweak request. Produce a revised version of the script that applies the change. The script the user already has: {{PROMPT}}. Output the complete revised script only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions.`;
+
   const SYSTEM_EDIT = `You read a product brief and a change request, then produce a single Lovable prompt that applies the change.
 
 The brief the user already built:
@@ -915,6 +992,14 @@ Rules — no exceptions:
   let audioTweakMode = false;
   let audioTweakCount = 0;
 
+  let audioSubMode = null; // 'music' | 'sfx' | 'voice'
+  let sfxPayload = null;
+  let sfxTweakMode = false;
+  let sfxTweakCount = 0;
+  let voicePayload = null;
+  let voiceTweakMode = false;
+  let voiceTweakCount = 0;
+
   const IMAGE_TOOL_URLS = {
     midjourney: 'https://www.midjourney.com',
     flux: 'https://fal.ai/models/fal-ai/flux/dev',
@@ -933,6 +1018,16 @@ Rules — no exceptions:
 
   const AUDIO_TOOL_LABELS = {
     suno: 'Suno'
+  };
+
+  const ELEVENLABS_TOOL_URLS = {
+    elevenlabs_sfx: 'https://elevenlabs.io/sound-effects',
+    elevenlabs_voice: 'https://elevenlabs.io'
+  };
+
+  const ELEVENLABS_TOOL_LABELS = {
+    elevenlabs_sfx: 'ElevenLabs',
+    elevenlabs_voice: 'ElevenLabs'
   };
 
   // DOM
@@ -1035,6 +1130,42 @@ Rules — no exceptions:
   }
 
   function selectMode(mode) {
+    if (mode === 'audio') {
+      currentMode = 'audio';
+      addBubble('user', 'create audio');
+      setTimeout(() => {
+        addBubble('nerlo', 'What kind of audio are you looking to create?');
+        setTimeout(() => {
+          const card = document.createElement('div');
+          card.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;align-self:flex-start;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
+
+          const musicBtn = document.createElement('button');
+          musicBtn.className = 'btn btn-primary';
+          musicBtn.textContent = 'Music or a song';
+          musicBtn.style.cssText = 'text-align:left;border-radius:100px;';
+          musicBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('music'); });
+
+          const sfxBtn = document.createElement('button');
+          sfxBtn.className = 'btn btn-primary';
+          sfxBtn.textContent = 'A sound effect';
+          sfxBtn.style.cssText = 'text-align:left;border-radius:100px;';
+          sfxBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('sfx'); });
+
+          const voiceBtn = document.createElement('button');
+          voiceBtn.className = 'btn btn-primary';
+          voiceBtn.textContent = 'A voiceover or narration';
+          voiceBtn.style.cssText = 'text-align:left;border-radius:100px;';
+          voiceBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('voice'); });
+
+          card.appendChild(musicBtn);
+          card.appendChild(sfxBtn);
+          card.appendChild(voiceBtn);
+          innerEl.appendChild(card);
+          scrollToBottom();
+        }, 400);
+      }, 350);
+      return;
+    }
     currentMode = mode;
     const userLabel = mode === 'app' ? 'build an app' : mode === 'image' ? 'generate an image' : 'create audio';
     addBubble('user', userLabel);
@@ -1058,6 +1189,24 @@ Rules — no exceptions:
     }, 350);
   }
 
+  function selectAudioSubMode(subMode) {
+    audioSubMode = subMode;
+    const labels = { music: 'music or a song', sfx: 'a sound effect', voice: 'a voiceover or narration' };
+    const placeholders = { music: 'describe the music you want...', sfx: 'describe the sound you want...', voice: 'describe what you need narrated...' };
+    const greetings = {
+      music: "Describe the music you want. Don't worry about getting it perfect — that's what I'm here for.",
+      sfx: "Describe the sound you want. Don't worry about getting it perfect — that's what I'm here for.",
+      voice: "Tell me what you need narrated and where it's going. Don't worry about getting it perfect — that's what I'm here for."
+    };
+    addBubble('user', labels[subMode]);
+    inputEl.placeholder = placeholders[subMode];
+    inputArea.style.display = '';
+    setTimeout(() => {
+      addBubble('nerlo', greetings[subMode]);
+      setInputEnabled(true);
+    }, 350);
+  }
+
   function resetConversation() {
     conversationHistory = [];
     answeredTopics = [];
@@ -1074,6 +1223,13 @@ Rules — no exceptions:
     audioPayload = null;
     audioTweakMode = false;
     audioTweakCount = 0;
+    audioSubMode = null;
+    sfxPayload = null;
+    sfxTweakMode = false;
+    sfxTweakCount = 0;
+    voicePayload = null;
+    voiceTweakMode = false;
+    voiceTweakCount = 0;
     inputEl.placeholder = 'tell me what you want to build...';
     renderWelcome();
   }
@@ -1265,6 +1421,22 @@ Rules — no exceptions:
     } catch {
       return null;
     }
+  }
+
+  function tryParseSfxPrompt(text) {
+    if (!text || !text.includes('NERLO_SFX_PROMPT_READY')) return null;
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+  }
+
+  function tryParseVoicePrompt(text) {
+    if (!text || !text.includes('NERLO_VOICE_PROMPT_READY')) return null;
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
   }
 
   function showBrief(brief) {
@@ -1748,6 +1920,65 @@ Rules — no exceptions:
     }
   }
 
+  async function generateElevenLabsAudio(type, prompt, voiceId, triggerBtn) {
+    triggerBtn.textContent = 'generating...';
+    triggerBtn.disabled = true;
+
+    try {
+      const body = { type, prompt };
+      if (voiceId) body.voice_id = voiceId;
+
+      const res = await fetch('/api/audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!data.audio) throw new Error('no audio');
+
+      const existing = document.getElementById('nerlo-audio-card');
+      if (existing) existing.remove();
+
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+      card.id = 'nerlo-audio-card';
+
+      const binary = atob(data.audio);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: data.contentType || 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.src = url;
+      audio.style.cssText = 'width:100%;display:block;margin-bottom:0.75rem;';
+
+      const footer = document.createElement('div');
+      footer.style.cssText = 'display:flex;justify-content:flex-end;padding:0 0 0.25rem 0;';
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = 'nerlo-audio.mp3';
+      downloadLink.textContent = 'download →';
+      downloadLink.style.cssText = 'font-size:0.8rem;color:var(--cream-dim);text-decoration:none;';
+      downloadLink.addEventListener('mouseover', () => downloadLink.style.color = 'var(--star)');
+      downloadLink.addEventListener('mouseout', () => downloadLink.style.color = 'var(--cream-dim)');
+      footer.appendChild(downloadLink);
+
+      card.style.padding = '1rem 1.1rem';
+      card.appendChild(audio);
+      card.appendChild(footer);
+      innerEl.appendChild(card);
+      scrollToBottom();
+
+      triggerBtn.textContent = 'regenerate →';
+      triggerBtn.disabled = false;
+    } catch {
+      triggerBtn.textContent = 'generation failed — try again';
+      triggerBtn.disabled = false;
+    }
+  }
+
   function revealAudioPrompt(payload) {
     audioPayload = payload;
     const toolLabel = AUDIO_TOOL_LABELS[payload.tool] || payload.tool;
@@ -1923,6 +2154,342 @@ Rules — no exceptions:
     scrollToBottom();
   }
 
+  function revealSfxPrompt(payload) {
+    sfxPayload = payload;
+
+    addBubble('nerlo', 'Your prompt is ready. Based on what you described, ElevenLabs is ' + payload.reason + ' One click and we generate it here.');
+
+    setTimeout(() => {
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+
+      const header = document.createElement('div');
+      header.className = 'brief-card-header';
+
+      const label = document.createElement('span');
+      label.className = 'brief-card-label';
+      label.textContent = 'your prompt';
+      header.appendChild(label);
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'brief-section-body';
+      body.textContent = payload.prompt;
+      card.appendChild(body);
+
+      innerEl.appendChild(card);
+      scrollToBottom();
+    }, 500);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const generateBtn = document.createElement('button');
+      generateBtn.className = 'btn-build';
+      generateBtn.textContent = 'generate sound →';
+      generateBtn.addEventListener('click', () => {
+        generateElevenLabsAudio('sfx', sfxPayload.prompt, null, generateBtn);
+      });
+
+      const tweakLink = document.createElement('a');
+      tweakLink.className = 'build-start-over';
+      tweakLink.textContent = 'request a tweak →';
+      tweakLink.href = '#';
+      tweakLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.target.closest('.build-row')?.remove();
+        enterSfxTweakMode();
+      });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-start-over';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetConversation();
+      });
+
+      row.appendChild(generateBtn);
+      row.appendChild(tweakLink);
+      row.appendChild(startOver);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function enterSfxTweakMode() {
+    sfxTweakMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendSfxTweakMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_SFX_TWEAK.replace('{{PROMPT}}', () => sfxPayload.prompt);
+
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'something went wrong. try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const revised = (data.content[0].text || '').trim();
+    sfxTweakCount++;
+    sfxTweakMode = false;
+    inputArea.style.display = 'none';
+    sfxPayload = { ...sfxPayload, prompt: revised };
+    showSfxTweakResult(revised);
+  }
+
+  function showSfxTweakResult(revised) {
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'revised prompt';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'brief-section-body';
+    body.textContent = revised;
+    card.appendChild(body);
+
+    innerEl.appendChild(card);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const alreadyGenerated = !!document.getElementById('nerlo-audio-card');
+
+    const generateBtn = document.createElement('button');
+    generateBtn.className = 'btn-build';
+    generateBtn.textContent = alreadyGenerated ? 'regenerate →' : 'generate sound →';
+    generateBtn.addEventListener('click', () => {
+      generateElevenLabsAudio('sfx', sfxPayload.prompt, null, generateBtn);
+    });
+
+    const anotherTweak = document.createElement('a');
+    anotherTweak.className = 'build-start-over';
+    anotherTweak.textContent = 'request another tweak →';
+    anotherTweak.href = '#';
+    anotherTweak.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.target.closest('.build-row')?.remove();
+      enterSfxTweakMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetConversation();
+    });
+
+    row.appendChild(generateBtn);
+    row.appendChild(anotherTweak);
+    row.appendChild(startOver);
+
+    if (sfxTweakCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.textContent = "heads up — you've made a few tweaks. starting fresh with an updated description can produce better results.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
+
+    if (alreadyGenerated) {
+      generateBtn.click();
+    }
+  }
+
+  function revealVoicePrompt(payload) {
+    voicePayload = payload;
+
+    addBubble('nerlo', 'Your script is ready. Based on what you described, ElevenLabs is ' + payload.reason + ' One click and we generate it here.');
+
+    setTimeout(() => {
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+
+      const header = document.createElement('div');
+      header.className = 'brief-card-header';
+
+      const label = document.createElement('span');
+      label.className = 'brief-card-label';
+      label.textContent = 'your script';
+      header.appendChild(label);
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'brief-section-body';
+      body.textContent = payload.prompt;
+      card.appendChild(body);
+
+      innerEl.appendChild(card);
+      scrollToBottom();
+    }, 500);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const generateBtn = document.createElement('button');
+      generateBtn.className = 'btn-build';
+      generateBtn.textContent = 'generate voiceover →';
+      generateBtn.addEventListener('click', () => {
+        generateElevenLabsAudio('voice', voicePayload.prompt, voicePayload.voice_id, generateBtn);
+      });
+
+      const tweakLink = document.createElement('a');
+      tweakLink.className = 'build-start-over';
+      tweakLink.textContent = 'request a tweak →';
+      tweakLink.href = '#';
+      tweakLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.target.closest('.build-row')?.remove();
+        enterVoiceTweakMode();
+      });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-start-over';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetConversation();
+      });
+
+      row.appendChild(generateBtn);
+      row.appendChild(tweakLink);
+      row.appendChild(startOver);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function enterVoiceTweakMode() {
+    voiceTweakMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendVoiceTweakMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_VOICE_TWEAK.replace('{{PROMPT}}', () => voicePayload.prompt);
+
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'something went wrong. try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const revised = (data.content[0].text || '').trim();
+    voiceTweakCount++;
+    voiceTweakMode = false;
+    inputArea.style.display = 'none';
+    voicePayload = { ...voicePayload, prompt: revised };
+    showVoiceTweakResult(revised);
+  }
+
+  function showVoiceTweakResult(revised) {
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'revised script';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'brief-section-body';
+    body.textContent = revised;
+    card.appendChild(body);
+
+    innerEl.appendChild(card);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const alreadyGenerated = !!document.getElementById('nerlo-audio-card');
+
+    const generateBtn = document.createElement('button');
+    generateBtn.className = 'btn-build';
+    generateBtn.textContent = alreadyGenerated ? 'regenerate →' : 'generate voiceover →';
+    generateBtn.addEventListener('click', () => {
+      generateElevenLabsAudio('voice', voicePayload.prompt, voicePayload.voice_id, generateBtn);
+    });
+
+    const anotherTweak = document.createElement('a');
+    anotherTweak.className = 'build-start-over';
+    anotherTweak.textContent = 'request another tweak →';
+    anotherTweak.href = '#';
+    anotherTweak.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.target.closest('.build-row')?.remove();
+      enterVoiceTweakMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetConversation();
+    });
+
+    row.appendChild(generateBtn);
+    row.appendChild(anotherTweak);
+    row.appendChild(startOver);
+
+    if (voiceTweakCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.textContent = "heads up — you've made a few tweaks. starting fresh with an updated script can produce better results.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
+
+    if (alreadyGenerated) {
+      generateBtn.click();
+    }
+  }
+
   function enterEditMode() {
     editMode = true;
     inputEl.placeholder = 'what would you like to change?';
@@ -2081,6 +2648,20 @@ Rules — no exceptions:
       revealAudioPrompt(audioPrompt);
       return;
     }
+    const sfxPrompt = tryParseSfxPrompt(text);
+    if (sfxPrompt) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      inputArea.style.display = 'none';
+      revealSfxPrompt(sfxPrompt);
+      return;
+    }
+    const voicePrompt = tryParseVoicePrompt(text);
+    if (voicePrompt) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      inputArea.style.display = 'none';
+      revealVoicePrompt(voicePrompt);
+      return;
+    }
     addBubble('nerlo', text);
     conversationHistory.push({ role: 'assistant', content: text });
     extractTopic();
@@ -2090,7 +2671,7 @@ Rules — no exceptions:
   // Main send flow
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode)) return;
+    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode) || (sfxPayload && !sfxTweakMode) || (voicePayload && !voiceTweakMode)) return;
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
@@ -2110,6 +2691,16 @@ Rules — no exceptions:
       return;
     }
 
+    if (sfxTweakMode) {
+      await sendSfxTweakMessage(text);
+      return;
+    }
+
+    if (voiceTweakMode) {
+      await sendVoiceTweakMessage(text);
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
@@ -2124,7 +2715,8 @@ Rules — no exceptions:
     }
 
     if (currentMode === 'audio') {
-      const intakeData = await callAPI(SYSTEM_AUDIO, conversationHistory.map(m => ({ role: m.role, content: m.content })));
+      const systemPrompt = audioSubMode === 'sfx' ? SYSTEM_SFX : audioSubMode === 'voice' ? SYSTEM_VOICE : SYSTEM_AUDIO;
+      const intakeData = await callAPI(systemPrompt, conversationHistory.map(m => ({ role: m.role, content: m.content })));
       await deliverAssistantResponse(intakeData);
       return;
     }
