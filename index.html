@@ -1490,7 +1490,6 @@ Rules — no exceptions:
         resetConversation();
       });
 
-      row.appendChild(copyBtn);
       if (payload.tool === 'flux') {
         const generateBtn = document.createElement('button');
         generateBtn.className = 'btn-build';
@@ -1500,6 +1499,7 @@ Rules — no exceptions:
         });
         row.appendChild(generateBtn);
       }
+      row.appendChild(copyBtn);
       row.appendChild(openLink);
       row.appendChild(tweakLink);
       row.appendChild(startOver);
@@ -1605,7 +1605,6 @@ Rules — no exceptions:
       resetConversation();
     });
 
-    row.appendChild(copyBtn);
     if (imagePayload.tool === 'flux') {
       const generateBtn = document.createElement('button');
       generateBtn.className = 'btn-build';
@@ -1615,6 +1614,7 @@ Rules — no exceptions:
       });
       row.appendChild(generateBtn);
     }
+    row.appendChild(copyBtn);
     row.appendChild(openLink);
     row.appendChild(anotherTweak);
     row.appendChild(startOver);
