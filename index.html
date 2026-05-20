@@ -933,7 +933,7 @@ TOPICS TO COVER — maximum 5 questions:
 1. What is this voiceover for (podcast intro, explainer video, phone greeting, audiobook, ad, etc.)
 2. What should it say — get the actual script or key message from the user
 3. Tone and delivery — warm and friendly, authoritative and clear, calm and soothing, energetic and upbeat
-4. Gender preference for the voice — male, female, or no preference
+4. Any other important delivery notes not already covered.
 5. Approximate length or word count if not already clear
 
 HARD CEILING: 5 questions maximum. Once you have the script and delivery direction, generate immediately.
@@ -948,11 +948,7 @@ Respond with ONLY this — no text before or after:
 NERLO_VOICE_PROMPT_READY
 {"tool":"elevenlabs_voice","prompt":"","voice_id":"","reason":"the right tool for generating natural, high-quality voiceovers directly from your script."}
 
-Voice selection based on stated preference:
-- Female voice or no preference: voice_id = "21m00Tcm4TlvDq8ikWAM" (Rachel — neutral, clear, professional)
-- Male voice: voice_id = "TxGEqnHWrfWFTfGW9XjX" (Josh — warm, natural, conversational)
-- Warm and friendly female: voice_id = "EXAVITQu4vr4xnSDxMaL" (Bella)
-- Authoritative male: voice_id = "TxGEqnHWrfWFTfGW9XjX" (Josh)`;
+Voice selection: Do not select a voice_id. Leave voice_id as an empty string in the JSON payload. The voice will be chosen by the user from a picker after the script is ready.`;
 
   const SYSTEM_VOICE_TWEAK = `You receive a voiceover script and a tweak request. Produce a revised version of the script that applies the change. The script the user already has: {{PROMPT}}. Output the complete revised script only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions.`;
 
@@ -1926,7 +1922,8 @@ Rules — no exceptions:
 
     try {
       const body = { type, prompt };
-      if (voiceId) body.voice_id = voiceId;
+      const resolvedVoiceId = type === 'voice' ? (voiceId || FALLBACK_VOICE_ID) : voiceId;
+      if (resolvedVoiceId) body.voice_id = resolvedVoiceId;
 
       const res = await fetch('/api/audio', {
         method: 'POST',
@@ -2322,10 +2319,180 @@ Rules — no exceptions:
     }
   }
 
+  const FALLBACK_VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
+
+  async function fetchVoices() {
+    try {
+      const res = await fetch('/api/voices');
+      const data = await res.json();
+      if (data.error || !Array.isArray(data)) return [];
+      return data;
+    } catch {
+      return [];
+    }
+  }
+
+  function renderVoicePicker(card, voices, initialVoiceId) {
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'choose a voice';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    let currentFilter = 'all';
+    let selectedVoiceId = initialVoiceId || '';
+
+    const pillBase = 'font-family:DM Sans,sans-serif;font-size:0.72rem;padding:0.35rem 0.85rem;border-radius:100px;cursor:pointer;background:var(--surface);border:1px solid var(--border-strong);color:var(--cream-dim);transition:background 0.2s,color 0.2s;';
+    const pillActive = 'font-family:DM Sans,sans-serif;font-size:0.72rem;padding:0.35rem 0.85rem;border-radius:100px;cursor:pointer;background:var(--star-dim);border:1px solid var(--star-dim);color:var(--cream);';
+
+    const filterRow = document.createElement('div');
+    filterRow.style.cssText = 'display:flex;gap:0.4rem;margin-bottom:0.85rem;';
+    const filters = [
+      { key: 'all', label: 'all' },
+      { key: 'female', label: 'female' },
+      { key: 'male', label: 'male' }
+    ];
+    const pillEls = {};
+    filters.forEach(f => {
+      const pill = document.createElement('button');
+      pill.style.cssText = currentFilter === f.key ? pillActive : pillBase;
+      pill.textContent = f.label;
+      pill.addEventListener('click', () => {
+        currentFilter = f.key;
+        Object.keys(pillEls).forEach(k => {
+          pillEls[k].style.cssText = currentFilter === k ? pillActive : pillBase;
+        });
+        renderList();
+      });
+      pillEls[f.key] = pill;
+      filterRow.appendChild(pill);
+    });
+    card.appendChild(filterRow);
+
+    const list = document.createElement('div');
+    list.style.cssText = 'max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.85rem;padding-right:0.25rem;';
+    card.appendChild(list);
+
+    const generateBtn = document.createElement('button');
+    generateBtn.className = 'btn-build';
+    generateBtn.textContent = 'generate voiceover →';
+    generateBtn.style.alignSelf = 'flex-start';
+    generateBtn.disabled = !selectedVoiceId;
+    generateBtn.style.opacity = selectedVoiceId ? '1' : '0.4';
+    generateBtn.style.cursor = selectedVoiceId ? 'pointer' : 'not-allowed';
+    generateBtn.addEventListener('click', () => {
+      if (!selectedVoiceId) return;
+      voicePayload.voice_id = selectedVoiceId;
+      generateElevenLabsAudio('voice', voicePayload.prompt, voicePayload.voice_id, generateBtn);
+    });
+    card.appendChild(generateBtn);
+
+    const optBase = 'padding:0.65rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:0.65rem;border:1px solid var(--border);background:transparent;transition:background 0.15s,border-color 0.15s;';
+    const optSelected = 'padding:0.65rem 0.8rem;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:0.65rem;border:1px solid var(--star);background:var(--surface);transition:background 0.15s,border-color 0.15s;';
+
+    function renderList() {
+      list.innerHTML = '';
+      const filtered = currentFilter === 'all'
+        ? voices
+        : voices.filter(v => (v.gender || '').toLowerCase() === currentFilter);
+      if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'color:var(--cream-dim);font-size:0.82rem;padding:0.5rem 0;text-align:center;';
+        empty.textContent = 'no voices match this filter';
+        list.appendChild(empty);
+        return;
+      }
+      filtered.forEach(voice => {
+        const opt = document.createElement('div');
+        const isSelected = voice.id === selectedVoiceId;
+        opt.style.cssText = isSelected ? optSelected : optBase;
+
+        const info = document.createElement('div');
+        info.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:0.15rem;min-width:0;';
+
+        const name = document.createElement('div');
+        name.style.cssText = 'font-weight:500;color:var(--cream);font-size:0.88rem;';
+        name.textContent = voice.name;
+        info.appendChild(name);
+
+        if (voice.description) {
+          const desc = document.createElement('div');
+          desc.style.cssText = 'font-size:0.75rem;color:var(--cream-dim);';
+          desc.textContent = voice.description;
+          info.appendChild(desc);
+        }
+
+        opt.appendChild(info);
+
+        if (voice.preview_url) {
+          const playBtn = document.createElement('button');
+          playBtn.style.cssText = 'background:transparent;border:1px solid var(--border-strong);color:var(--cream-dim);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.65rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;';
+          playBtn.textContent = '▶';
+          playBtn.setAttribute('aria-label', 'preview');
+          playBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            try { new Audio(voice.preview_url).play(); } catch {}
+          });
+          opt.appendChild(playBtn);
+        }
+
+        opt.addEventListener('click', () => {
+          selectedVoiceId = voice.id;
+          voicePayload.voice_id = voice.id;
+          generateBtn.disabled = false;
+          generateBtn.style.opacity = '1';
+          generateBtn.style.cursor = 'pointer';
+          renderList();
+        });
+
+        list.appendChild(opt);
+      });
+    }
+
+    renderList();
+  }
+
+  function appendVoicePickerOrFallback(parent, initialVoiceId) {
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const loading = document.createElement('div');
+    loading.style.cssText = 'color:var(--cream-dim);font-size:0.85rem;padding:0.75rem 0;text-align:center;';
+    loading.textContent = 'loading voices...';
+    card.appendChild(loading);
+
+    parent.appendChild(card);
+    scrollToBottom();
+
+    fetchVoices().then(voices => {
+      card.innerHTML = '';
+      if (!voices.length) {
+        card.remove();
+        const row = document.createElement('div');
+        row.className = 'build-row';
+        const fallbackBtn = document.createElement('button');
+        fallbackBtn.className = 'btn-build';
+        fallbackBtn.textContent = 'generate voiceover →';
+        fallbackBtn.addEventListener('click', () => {
+          voicePayload.voice_id = FALLBACK_VOICE_ID;
+          generateElevenLabsAudio('voice', voicePayload.prompt, voicePayload.voice_id, fallbackBtn);
+        });
+        row.appendChild(fallbackBtn);
+        parent.appendChild(row);
+        scrollToBottom();
+        return;
+      }
+      renderVoicePicker(card, voices, initialVoiceId);
+      scrollToBottom();
+    });
+  }
+
   function revealVoicePrompt(payload) {
     voicePayload = payload;
 
-    addBubble('nerlo', 'Your script is ready. Based on what you described, ElevenLabs is ' + payload.reason + ' One click and we generate it here.');
+    addBubble('nerlo', 'Your script is ready. Based on what you described, ElevenLabs is ' + payload.reason + ' Pick a voice and we generate it here.');
 
     setTimeout(() => {
       const card = document.createElement('div');
@@ -2350,6 +2517,8 @@ Rules — no exceptions:
     }, 500);
 
     setTimeout(() => {
+      appendVoicePickerOrFallback(innerEl, voicePayload.voice_id);
+
       const row = document.createElement('div');
       row.className = 'build-row';
 
@@ -2428,6 +2597,8 @@ Rules — no exceptions:
     card.appendChild(body);
 
     innerEl.appendChild(card);
+
+    appendVoicePickerOrFallback(innerEl, voicePayload.voice_id);
 
     const row = document.createElement('div');
     row.className = 'build-row';
