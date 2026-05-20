@@ -14,7 +14,13 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
-    const { prompt, ar } = req.body;
+    const raw = await new Promise((resolve, reject) => {
+      let data = '';
+      req.on('data', chunk => { data += chunk; });
+      req.on('end', () => resolve(data));
+      req.on('error', reject);
+    });
+    const { prompt, ar } = JSON.parse(raw);
     const image_size = SIZE_MAP[ar] || SIZE_MAP['1:1'];
     const response = await fetch('https://fal.run/fal-ai/flux/dev', {
       method: 'POST',
