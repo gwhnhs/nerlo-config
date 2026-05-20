@@ -42,7 +42,7 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           text: prompt,
-          model_id: 'eleven_monolingual_v1',
+          model_id: 'eleven_multilingual_v2',
           voice_settings: { stability: 0.5, similarity_boost: 0.75 }
         })
       });
