@@ -812,6 +812,73 @@ The tool this prompt is written for: {{TOOL}}
 
 When the user describes a change, output the complete revised prompt only. No preamble, no explanation, no markdown, no quoting. Preserve all parameters and formatting of the original prompt. Apply only the change the user requested. Never ask follow-up questions.`;
 
+  const SYSTEM_AUDIO = `You are nerlo — helping someone create music or audio they cannot yet describe in the language these tools need. Your job is to understand what they want to hear and translate it into a precise prompt for Suno. Talk like a smart friend who genuinely wants to understand what they are imagining. Never mention you are collecting information. Never compliment the idea. Never express excitement. Warmth comes from asking sharp questions that show real understanding.
+
+LANGUAGE RULES — NO EXCEPTIONS:
+Never use "like" as a filler, connector, or example introducer. Replace with "such as", "for example", or "for instance".
+Every response must open with a question or directly lead into one. Never open with a statement about what the user said, a summary of their idea, or any observation before the question.
+Never use markdown formatting — no asterisks, bullets, bold, headers, or lists. Plain conversational prose only.
+
+PHRASE VARIATION RULE:
+When introducing examples in a question, never use the same phrase twice in a row. Rotate through: "such as", "for example", "for instance", "think:", "along the lines of", "say,". Never use the same phrase in two consecutive questions.
+
+CONTENT RULES — NO EXCEPTIONS:
+
+1. NEVER ASK WHAT YOU ALREADY KNOW.
+Before asking anything, extract what is already answered from the user's messages. If they said "a happy birthday song," purpose and mood are answered. If they said "no lyrics, just instrumental," vocals are answered. Only ask about what is genuinely missing.
+
+2. NEVER REPEAT A QUESTION.
+Before forming any question, scan every prior message and build a mental list of every topic already answered. If a topic is answered in any form, it is closed. Do not revisit it.
+
+3. NEVER REFERENCE YOUR OWN INTERNAL TRACKING.
+Never use phrases that expose your internal mechanics. If you need to move past something already discussed, simply ask the next question without explanation.
+
+4. NEVER INVENT DETAILS.
+Only include in the final prompt what the user explicitly stated or confirmed. Never assume genre, tempo, instrumentation, or lyrical content they did not mention.
+
+5. ONE QUESTION AT A TIME.
+Never ask multiple questions in one message. Every question must change the output.
+
+6. USE ANCHORED STEERING FOR AUDIO VOCABULARY.
+Regular Joe knows how music feels but not how to describe it in production terms. Never ask open questions about things they cannot answer without the vocabulary. Instead, offer feeling-pairs or short option sets and let them steer. Examples of the technique — not fixed questions, adapt to what fits:
+— Instead of "what genre?" ask "does this feel more like something acoustic and stripped back, full band and energetic, or electronic and produced?"
+— Instead of "what tempo?" ask "does this feel like something slow and spacious, mid-tempo and flowing, or fast and driving?"
+— Instead of "what mood?" ask "does this feel more uplifting and warm, melancholic and reflective, intense and urgent, or calm and peaceful?"
+
+7. KNOW WHEN TO STOP — HARD CEILING OF 6 QUESTIONS.
+The six topics nerlo must cover are: purpose/occasion, vocals vs instrumental, mood/energy, genre direction, lyrical subject (only if vocals), and reference. Track which topics are answered from the user's messages. When all relevant topics are covered, or when additional questions would not change the output, generate the prompt immediately. Hard ceiling: never ask more than 6 questions total. The ceiling is a maximum, not a target — if the opening message covers most topics, wrap earlier.
+
+8. LYRICAL SUBJECT — CONDITIONAL.
+Only ask what the song is about if the user wants vocals. If they said instrumental, skip this topic entirely.
+
+9. REFERENCE — OPTIONAL BUT POWERFUL.
+Always try to get one reference — a song, artist, decade, or vibe the user already knows. If they cannot think of one, skip it and move on.
+
+LANGUAGE RULE:
+Always respond in the same language the user is writing in. The final JSON payload always stays in English regardless of conversation language.
+
+OUTPUT — WHEN READY:
+Respond with ONLY this — no text before or after:
+NERLO_AUDIO_PROMPT_READY
+{"tool":"suno","prompt":"","reason":""}
+
+tool must be exactly: suno
+
+Reason string — use exactly:
+suno: "the leading AI music tool — it turns a precise text prompt into a full song with vocals, instrumentation, and production."
+
+Prompt format for Suno:
+Write a single paragraph of comma-separated descriptors. Include in this order: genre and subgenre, tempo and energy, mood, instrumentation, vocal style (or "instrumental" if no vocals), lyrical subject (if applicable), and one reference if provided. Keep it under 200 words. No markdown. No parameters. Write in plain English descriptors separated by commas.
+Example with vocals: indie folk, mid-tempo, warm and nostalgic, acoustic guitar and light percussion, soft male vocals, a song about moving to a new city and leaving someone behind, in the style of Bon Iver
+Example instrumental: lo-fi hip hop, slow tempo, calm and focused, soft piano and vinyl crackle, muted drums, instrumental, study music vibes`;
+
+  const SYSTEM_AUDIO_TWEAK = `You receive a Suno music prompt and a tweak request. Produce a revised version of the full prompt that applies the change.
+
+The prompt the user already has:
+{{PROMPT}}
+
+When the user describes a change, output the complete revised prompt only. No preamble, no explanation, no markdown, no quoting. Preserve the comma-separated format of the original prompt. Apply only the change the user requested. Never ask follow-up questions.`;
+
   const SYSTEM_EDIT = `You read a product brief and a change request, then produce a single Lovable prompt that applies the change.
 
 The brief the user already built:
@@ -844,6 +911,10 @@ Rules — no exceptions:
   let imageTweakMode = false;
   let imageTweakCount = 0;
 
+  let audioPayload = null;
+  let audioTweakMode = false;
+  let audioTweakCount = 0;
+
   const IMAGE_TOOL_URLS = {
     midjourney: 'https://www.midjourney.com',
     flux: 'https://fal.ai/models/fal-ai/flux/dev',
@@ -854,6 +925,14 @@ Rules — no exceptions:
     midjourney: 'Midjourney',
     flux: 'Flux',
     firefly: 'Adobe Firefly'
+  };
+
+  const AUDIO_TOOL_URLS = {
+    suno: 'https://suno.com'
+  };
+
+  const AUDIO_TOOL_LABELS = {
+    suno: 'Suno'
   };
 
   // DOM
@@ -937,8 +1016,18 @@ Rules — no exceptions:
           selectMode('image');
         });
 
+        const audioBtn = document.createElement('button');
+        audioBtn.className = 'btn btn-primary';
+        audioBtn.textContent = 'Create audio';
+        audioBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        audioBtn.addEventListener('click', () => {
+          card.remove();
+          selectMode('audio');
+        });
+
         card.appendChild(appBtn);
         card.appendChild(imgBtn);
+        card.appendChild(audioBtn);
         innerEl.appendChild(card);
         scrollToBottom();
       }, 400);
@@ -947,18 +1036,23 @@ Rules — no exceptions:
 
   function selectMode(mode) {
     currentMode = mode;
-    addBubble('user', mode === 'app' ? 'build an app' : 'generate an image');
+    const userLabel = mode === 'app' ? 'build an app' : mode === 'image' ? 'generate an image' : 'create audio';
+    addBubble('user', userLabel);
     inputArea.style.display = '';
     if (mode === 'app') {
       inputEl.placeholder = 'tell me what you want to build...';
-    } else {
+    } else if (mode === 'image') {
       inputEl.placeholder = 'describe what you want to see...';
+    } else {
+      inputEl.placeholder = 'describe what you want to create...';
     }
     setTimeout(() => {
       if (mode === 'app') {
         addBubble('nerlo', "Tell me what you want to build. Don't worry about getting it perfect — that's what I'm here for.");
-      } else {
+      } else if (mode === 'image') {
         addBubble('nerlo', "Describe what you want to see. Don't worry about getting it perfect — that's what I'm here for.");
+      } else {
+        addBubble('nerlo', "Describe what you want to create. Don't worry about getting it perfect — that's what I'm here for.");
       }
       setInputEnabled(true);
     }, 350);
@@ -977,6 +1071,9 @@ Rules — no exceptions:
     imagePayload = null;
     imageTweakMode = false;
     imageTweakCount = 0;
+    audioPayload = null;
+    audioTweakMode = false;
+    audioTweakCount = 0;
     inputEl.placeholder = 'tell me what you want to build...';
     renderWelcome();
   }
@@ -1148,6 +1245,18 @@ Rules — no exceptions:
 
   function tryParseImagePrompt(text) {
     if (!text || !text.includes('NERLO_IMAGE_PROMPT_READY')) return null;
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  function tryParseAudioPrompt(text) {
+    if (!text || !text.includes('NERLO_AUDIO_PROMPT_READY')) return null;
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
     if (start < 0 || end <= start) return null;
@@ -1639,6 +1748,201 @@ Rules — no exceptions:
     }
   }
 
+  function revealAudioPrompt(payload) {
+    audioPayload = payload;
+    const toolLabel = AUDIO_TOOL_LABELS[payload.tool] || payload.tool;
+    const toolUrl = AUDIO_TOOL_URLS[payload.tool] || 'https://suno.com';
+
+    addBubble('nerlo', 'Your prompt is ready. Based on what you want to create, ' + toolLabel + ' is ' + payload.reason + ' Copy the prompt and paste it in.');
+
+    setTimeout(() => {
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+
+      const header = document.createElement('div');
+      header.className = 'brief-card-header';
+
+      const label = document.createElement('span');
+      label.className = 'brief-card-label';
+      label.textContent = 'your prompt';
+      header.appendChild(label);
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'brief-section-body';
+      body.textContent = payload.prompt;
+      card.appendChild(body);
+
+      innerEl.appendChild(card);
+      scrollToBottom();
+    }, 500);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-build';
+      copyBtn.textContent = 'copy prompt';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(payload.prompt).then(() => {
+          copyBtn.textContent = 'copied ✓';
+          setTimeout(() => { copyBtn.textContent = 'copy prompt'; }, 2000);
+        });
+      });
+
+      const openLink = document.createElement('a');
+      openLink.className = 'build-alt';
+      openLink.textContent = 'open ' + toolLabel + ' →';
+      openLink.href = '#';
+      openLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigator.clipboard.writeText(payload.prompt);
+        window.open(toolUrl, '_blank');
+      });
+
+      const tweakLink = document.createElement('a');
+      tweakLink.className = 'build-start-over';
+      tweakLink.textContent = 'request a tweak →';
+      tweakLink.href = '#';
+      tweakLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.target.closest('.build-row')?.remove();
+        enterAudioTweakMode();
+      });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-start-over';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetConversation();
+      });
+
+      row.appendChild(copyBtn);
+      row.appendChild(openLink);
+      row.appendChild(tweakLink);
+      row.appendChild(startOver);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function enterAudioTweakMode() {
+    audioTweakMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendAudioTweakMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_AUDIO_TWEAK.replace('{{PROMPT}}', () => audioPayload.prompt);
+
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'something went wrong. try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const revised = (data.content[0].text || '').trim();
+    audioTweakCount++;
+    audioTweakMode = false;
+    inputArea.style.display = 'none';
+    audioPayload = { ...audioPayload, prompt: revised };
+    showAudioTweakResult(revised);
+  }
+
+  function showAudioTweakResult(revised) {
+    const toolLabel = AUDIO_TOOL_LABELS[audioPayload.tool] || audioPayload.tool;
+    const toolUrl = AUDIO_TOOL_URLS[audioPayload.tool] || 'https://suno.com';
+
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'revised prompt';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'brief-section-body';
+    body.textContent = revised;
+    card.appendChild(body);
+
+    innerEl.appendChild(card);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-build';
+    copyBtn.textContent = 'copy prompt';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(revised).then(() => {
+        copyBtn.textContent = 'copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'copy prompt'; }, 2000);
+      });
+    });
+
+    const openLink = document.createElement('a');
+    openLink.className = 'build-alt';
+    openLink.textContent = 'open ' + toolLabel + ' →';
+    openLink.href = '#';
+    openLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigator.clipboard.writeText(revised);
+      window.open(toolUrl, '_blank');
+    });
+
+    const anotherTweak = document.createElement('a');
+    anotherTweak.className = 'build-start-over';
+    anotherTweak.textContent = 'request another tweak →';
+    anotherTweak.href = '#';
+    anotherTweak.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.target.closest('.build-row')?.remove();
+      enterAudioTweakMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetConversation();
+    });
+
+    row.appendChild(copyBtn);
+    row.appendChild(openLink);
+    row.appendChild(anotherTweak);
+    row.appendChild(startOver);
+
+    if (audioTweakCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.textContent = "heads up — you've made a few tweaks. if Suno starts producing unexpected results, starting fresh with an updated prompt can help.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
+  }
+
   function enterEditMode() {
     editMode = true;
     inputEl.placeholder = 'what would you like to change?';
@@ -1790,6 +2094,13 @@ Rules — no exceptions:
       revealImagePrompt(imagePrompt);
       return;
     }
+    const audioPrompt = tryParseAudioPrompt(text);
+    if (audioPrompt) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      inputArea.style.display = 'none';
+      revealAudioPrompt(audioPrompt);
+      return;
+    }
     addBubble('nerlo', text);
     conversationHistory.push({ role: 'assistant', content: text });
     extractTopic();
@@ -1799,7 +2110,7 @@ Rules — no exceptions:
   // Main send flow
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode)) return;
+    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode)) return;
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
@@ -1814,6 +2125,11 @@ Rules — no exceptions:
       return;
     }
 
+    if (audioTweakMode) {
+      await sendAudioTweakMessage(text);
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
@@ -1823,6 +2139,12 @@ Rules — no exceptions:
 
     if (currentMode === 'image') {
       const intakeData = await callAPI(buildSystemPrompt(), conversationHistory.map(m => ({ role: m.role, content: m.content })));
+      await deliverAssistantResponse(intakeData);
+      return;
+    }
+
+    if (currentMode === 'audio') {
+      const intakeData = await callAPI(SYSTEM_AUDIO, conversationHistory.map(m => ({ role: m.role, content: m.content })));
       await deliverAssistantResponse(intakeData);
       return;
     }

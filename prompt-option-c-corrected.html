@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #07090f; color: #d4daf0; font-family: 'DM Sans', system-ui, sans-serif; padding: 1.5rem; min-height: 100vh; }
+  .label { font-size: 0.7rem; color: #4a5470; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .model { display: inline-block; background: #0d1120; border: 1px solid rgba(138,171,220,0.2); border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.75rem; color: #8aabdc; margin-bottom: 1rem; }
+  pre { background: #0d1120; border: 1px solid rgba(138,171,220,0.12); border-radius: 10px; padding: 1.25rem; font-size: 0.8rem; line-height: 1.75; white-space: pre-wrap; word-break: break-word; color: #d4daf0; font-family: inherit; max-height: 70vh; overflow-y: auto; }
+  button { margin-top: 1rem; background: #8aabdc; color: #07090f; border: none; border-radius: 8px; padding: 0.55rem 1.25rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  button:active { opacity: 0.8; }
+  .copied { background: #2a4a2a !important; color: #7ecf7e !important; }
+</style>
+</head>
+<body>
+  <div class="label">Claude Code Prompt — Option C: Direct Image Generation (corrected)</div>
+  <div class="model">🧠 Opus — new serverless function + dual-path UI change + auto-regen on tweak</div>
+  <pre id="prompt">Read the full index.html and api/chat.js before touching anything. Do not make any changes until you have read both files completely. Pay particular attention to revealImagePrompt() and showImageTweakResult() — they are two separate functions that both render an image-prompt card with a build-row of buttons. The original/first prompt renders via revealImagePrompt; every subsequent tweak renders via showImageTweakResult. Both need the generate button.
+
+This prompt implements Option C — direct image generation via fal.ai for the Flux vertical. Users who complete the image-gen intake and receive a Flux prompt will see a "generate image →" button that calls fal.ai and displays the result directly on nerlo.io. The button also appears in the tweak-result row, and when the user revises a prompt for which an image already exists, the new image regenerates automatically.
+
+---
+
+STEP 1 — Create api/image.js
+
+Create a new Vercel serverless function at api/image.js. Model its structure exactly on api/chat.js — same CORS header pattern, same OPTIONS preflight handler, same try/catch error shape.
+
+At the top of the file (outside the handler), export the runtime config so the function does not time out on Vercel's default 10s limit:
+
+  export const config = { maxDuration: 60 };
+
+The handler accepts POST requests with a JSON body: { prompt: string, ar: string }.
+
+Map the ar value to an explicit { width, height } pair (Flux dev expects multiples of 16, ~1MP total):
+
+  "1:1"  → { width: 1024, height: 1024 }
+  "9:16" → { width: 768,  height: 1344 }
+  "16:9" → { width: 1344, height: 768 }
+  "2:3"  → { width: 832,  height: 1248 }
+  anything else → 1:1 default
+
+Call fal.ai with the FAL_API_KEY environment variable (already set in Vercel):
+
+  POST https://fal.run/fal-ai/flux/dev
+  Headers:
+    Authorization: Key {FAL_API_KEY}
+    Content-Type: application/json
+  Body: { prompt, image_size: { width, height }, num_images: 1 }
+
+The fal.ai response shape is { images: [{ url: "..." }] }. Extract images[0].url and return { url } with status 200. If no url is present in the response, return status 502 with { error: "no image returned" }. Wrap the fal.ai call in try/catch and return { error: err.message } with status 500 on failure. Do not modify api/chat.js.
+
+---
+
+STEP 2 — Add generateImage() helper to index.html
+
+Add a new function called generateImage(prompt, ar, triggerBtn) to the script block in index.html. Place it immediately before the revealImagePrompt() function (currently at line ~1339).
+
+This function does the following:
+
+1. Set triggerBtn.textContent to "generating…" and triggerBtn.disabled = true.
+
+2. Call /api/image via fetch (POST, Content-Type application/json, body JSON.stringify({ prompt, ar })). Parse the JSON response.
+
+3. On success (response.ok AND data.url exists):
+   a. Find any existing element with id="nerlo-image-card" and remove it — regeneration replaces the previous image.
+   b. Create a div with className "brief-card" and id "nerlo-image-card". Set its inline style padding to 0 and overflow to hidden so the image fills it edge-to-edge with the card's border-radius.
+   c. Create an img element with src=data.url, width 100%, display block, border-radius 13px, alt "generated image".
+   d. Create a footer div with padding 0.85rem 1.1rem, display flex, justify-content flex-end.
+   e. Inside the footer, create an anchor with textContent "download →", href "#", font-size 0.8rem, color var(--cream-dim), no text-decoration. Hover: var(--star); mouseout: var(--cream-dim).
+   f. Wire the download anchor's click handler to fetch data.url, convert to a blob, create an object URL, programmatically click a hidden &lt;a&gt; with download="nerlo-image.jpg", then revokeObjectURL. This is required because fal.media is cross-origin and the native download attribute is ignored on cross-origin anchors. Wrap the fetch+blob in try/catch; on failure, fall back to window.open(data.url, '_blank').
+   g. Append img and footer to the card, append card to innerEl, call scrollToBottom().
+   h. Set triggerBtn.textContent to "regenerate →" and triggerBtn.disabled = false.
+
+4. On failure (any error or missing url):
+   a. Set triggerBtn.textContent to "generation failed — try again".
+   b. Set triggerBtn.disabled = false.
+   c. Do not render any card.
+
+---
+
+STEP 3 — Add "generate image →" button in BOTH revealImagePrompt() AND showImageTweakResult()
+
+There are two render paths. Both need the same button, gated on Flux.
+
+3a. In revealImagePrompt() — the build-row construction inside the setTimeout at ~1000ms (currently the block that builds copyBtn, openLink, tweakLink, startOver):
+
+  After creating copyBtn and before creating openLink, add:
+
+    if (payload.tool === 'flux') {
+      const generateBtn = document.createElement('button');
+      generateBtn.className = 'btn-build';
+      generateBtn.textContent = 'generate image →';
+      generateBtn.addEventListener('click', () => {
+        generateImage(payload.prompt, payload.ar, generateBtn);
+      });
+      row.appendChild(generateBtn);
+    }
+
+  Append generateBtn after copyBtn and before openLink. Final Flux button order: copy prompt → generate image → open Flux → request a tweak → start over.
+
+3b. In showImageTweakResult(revised) — the build-row construction (currently the block that builds copyBtn, openLink, anotherTweak, startOver):
+
+  After creating copyBtn and before creating openLink, add the same conditional, reading from imagePayload (which sendImageTweakMessage already updates with the revised prompt on line ~1459):
+
+    if (imagePayload.tool === 'flux') {
+      const generateBtn = document.createElement('button');
+      generateBtn.className = 'btn-build';
+      generateBtn.textContent = 'generate image →';
+      generateBtn.addEventListener('click', () => {
+        generateImage(imagePayload.prompt, imagePayload.ar, generateBtn);
+      });
+      row.appendChild(generateBtn);
+    }
+
+  Append generateBtn after copyBtn and before openLink. Final Flux button order in the tweak row: copy prompt → generate image → open Flux → request another tweak → start over.
+
+For Midjourney and Firefly, both paths are unchanged.
+
+---
+
+STEP 4 — Auto-regenerate on tweak when an image already exists
+
+Still inside showImageTweakResult(revised), after the row has been appended to innerEl and scrollToBottom() has been called (i.e. at the very end of the function, after the existing tweakCount-warning block):
+
+  if (imagePayload.tool === 'flux' && document.getElementById('nerlo-image-card')) {
+    const genBtn = Array.from(row.querySelectorAll('.btn-build'))
+      .find(b => b.textContent.startsWith('generate'));
+    if (genBtn) genBtn.click();
+  }
+
+This uses the local `row` variable (already in scope) rather than re-querying the DOM, so there is no timing race. The condition fires only when (a) the tool is Flux and (b) a previous image card from a prior generation is still on screen. If the user tweaked the prompt without ever generating, no auto-gen happens — they still get the manual button.
+
+---
+
+RULES — read before making any changes:
+
+- Do not modify api/chat.js in any way.
+- Do not modify the intake flow, brief generation logic, app building path, builder recommendation logic, edit loop, market check, services detection, or any CSS.
+- Do not touch revealBrief() or any function in the app-building path.
+- Do not add any new CSS classes or styles. Use existing classes (brief-card, build-row, btn-build, build-alt, build-start-over) and inline styles only where necessary.
+- The generate button is Flux only in both render paths. Midjourney and Firefly are completely unchanged.
+- This is fully additive — no existing behavior changes, no lines removed.
+- After completing all four steps, trace through revealBrief() and confirm nothing in the app-building path was touched.</pre>
+  <button id="btn" onclick="copy()">Copy prompt</button>
+  <script>
+    function copy() {
+      navigator.clipboard.writeText(document.getElementById('prompt').innerText);
+      const btn = document.getElementById('btn');
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy prompt'; btn.classList.remove('copied'); }, 2000);
+    }
+  </script>
+</body>
+</html>
