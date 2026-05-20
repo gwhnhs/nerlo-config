@@ -2353,13 +2353,6 @@ Rules — no exceptions:
       const row = document.createElement('div');
       row.className = 'build-row';
 
-      const generateBtn = document.createElement('button');
-      generateBtn.className = 'btn-build';
-      generateBtn.textContent = 'generate voiceover →';
-      generateBtn.addEventListener('click', () => {
-        generateElevenLabsAudio('voice', voicePayload.prompt, voicePayload.voice_id, generateBtn);
-      });
-
       const tweakLink = document.createElement('a');
       tweakLink.className = 'build-start-over';
       tweakLink.textContent = 'request a tweak →';
@@ -2379,7 +2372,6 @@ Rules — no exceptions:
         resetConversation();
       });
 
-      row.appendChild(generateBtn);
       row.appendChild(tweakLink);
       row.appendChild(startOver);
       innerEl.appendChild(row);
@@ -2440,15 +2432,6 @@ Rules — no exceptions:
     const row = document.createElement('div');
     row.className = 'build-row';
 
-    const alreadyGenerated = !!document.getElementById('nerlo-audio-card');
-
-    const generateBtn = document.createElement('button');
-    generateBtn.className = 'btn-build';
-    generateBtn.textContent = alreadyGenerated ? 'regenerate →' : 'generate voiceover →';
-    generateBtn.addEventListener('click', () => {
-      generateElevenLabsAudio('voice', voicePayload.prompt, voicePayload.voice_id, generateBtn);
-    });
-
     const anotherTweak = document.createElement('a');
     anotherTweak.className = 'build-start-over';
     anotherTweak.textContent = 'request another tweak →';
@@ -2468,7 +2451,6 @@ Rules — no exceptions:
       resetConversation();
     });
 
-    row.appendChild(generateBtn);
     row.appendChild(anotherTweak);
     row.appendChild(startOver);
 
@@ -2484,10 +2466,6 @@ Rules — no exceptions:
 
     innerEl.appendChild(row);
     scrollToBottom();
-
-    if (alreadyGenerated) {
-      generateBtn.click();
-    }
   }
 
   function enterEditMode() {
