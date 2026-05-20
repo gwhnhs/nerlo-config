@@ -1783,21 +1783,12 @@ Rules — no exceptions:
 
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn-build';
-      copyBtn.textContent = 'copy prompt';
+      copyBtn.textContent = 'copy & open Suno →';
       copyBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(payload.prompt).then(() => {
           copyBtn.textContent = 'copied ✓';
-          setTimeout(() => { copyBtn.textContent = 'copy prompt'; }, 2000);
+          setTimeout(() => { copyBtn.textContent = 'copy & open Suno →'; }, 2000);
         });
-      });
-
-      const openLink = document.createElement('a');
-      openLink.className = 'build-alt';
-      openLink.textContent = 'open ' + toolLabel + ' →';
-      openLink.href = '#';
-      openLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigator.clipboard.writeText(payload.prompt);
         window.open(toolUrl, '_blank');
       });
 
@@ -1821,7 +1812,6 @@ Rules — no exceptions:
       });
 
       row.appendChild(copyBtn);
-      row.appendChild(openLink);
       row.appendChild(tweakLink);
       row.appendChild(startOver);
       innerEl.appendChild(row);
@@ -1887,21 +1877,12 @@ Rules — no exceptions:
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'btn-build';
-    copyBtn.textContent = 'copy prompt';
+    copyBtn.textContent = 'copy & open Suno →';
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(revised).then(() => {
         copyBtn.textContent = 'copied ✓';
-        setTimeout(() => { copyBtn.textContent = 'copy prompt'; }, 2000);
+        setTimeout(() => { copyBtn.textContent = 'copy & open Suno →'; }, 2000);
       });
-    });
-
-    const openLink = document.createElement('a');
-    openLink.className = 'build-alt';
-    openLink.textContent = 'open ' + toolLabel + ' →';
-    openLink.href = '#';
-    openLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      navigator.clipboard.writeText(revised);
       window.open(toolUrl, '_blank');
     });
 
@@ -1925,7 +1906,6 @@ Rules — no exceptions:
     });
 
     row.appendChild(copyBtn);
-    row.appendChild(openLink);
     row.appendChild(anotherTweak);
     row.appendChild(startOver);
 
