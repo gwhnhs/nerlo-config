@@ -16,6 +16,8 @@ export default async function handler(req, res) {
     const { action, prompt, ratio, duration, taskId } = JSON.parse(raw);
 
     if (action === 'submit') {
+      // gen4.5 requires promptImage even in text-driven mode; neutral black frame keeps it from influencing the output
+      const BLACK_1X1_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVQI12NgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==';
       const response = await fetch('https://api.dev.runwayml.com/v1/image_to_video', {
         method: 'POST',
         headers: {
@@ -24,14 +26,17 @@ export default async function handler(req, res) {
           'X-Runway-Version': '2024-11-06'
         },
         body: JSON.stringify({
+          model: 'gen4.5',
           promptText: prompt,
+          promptImage: BLACK_1X1_PNG,
           ratio: ratio || '1280:720',
-          duration: duration || 5,
-          model: 'gen4.5'
+          duration: duration || 5
         })
       });
       const data = await response.json();
-      if (!data.id) return res.status(502).json({ error: data.error || 'submission failed' });
+      if (!response.ok || !data.id) {
+        return res.status(502).json({ error: data.error || data.message || JSON.stringify(data) });
+      }
       return res.status(200).json({ taskId: data.id });
     }
 
