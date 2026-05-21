@@ -1203,6 +1203,14 @@ Rules — no exceptions:
     }, 350);
   }
 
+  function trackEvent(event) {
+    fetch('/api/usage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event })
+    }).catch(() => {}); // fire and forget — never throws, never blocks
+  }
+
   function resetConversation() {
     conversationHistory = [];
     answeredTopics = [];
@@ -1557,6 +1565,7 @@ Rules — no exceptions:
 
       innerEl.appendChild(card);
       scrollToBottom();
+      trackEvent('brief');
     }, 500);
 
     // Build buttons — fade in after card
@@ -1676,6 +1685,7 @@ Rules — no exceptions:
       card.appendChild(footer);
       innerEl.appendChild(card);
       scrollToBottom();
+      trackEvent('image');
 
       triggerBtn.textContent = 'regenerate →';
       triggerBtn.disabled = false;
@@ -2003,6 +2013,7 @@ Rules — no exceptions:
 
       innerEl.appendChild(card);
       scrollToBottom();
+      trackEvent('audio_music');
     }, 500);
 
     setTimeout(() => {
@@ -2176,6 +2187,7 @@ Rules — no exceptions:
 
       innerEl.appendChild(card);
       scrollToBottom();
+      trackEvent('audio_sfx');
     }, 500);
 
     setTimeout(() => {
@@ -2518,6 +2530,7 @@ Rules — no exceptions:
 
     setTimeout(() => {
       appendVoicePickerOrFallback(innerEl, voicePayload.voice_id);
+      trackEvent('audio_voice');
 
       const row = document.createElement('div');
       row.className = 'build-row';
