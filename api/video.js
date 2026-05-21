@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     const { action, prompt, ratio, duration, taskId } = JSON.parse(raw);
 
     if (action === 'submit') {
-      const response = await fetch('https://api.dev.runwayml.com/v1/text_to_video', {
+      const response = await fetch('https://api.dev.runwayml.com/v1/image_to_video', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.RUNWAY_API_KEY}`,
@@ -25,9 +25,9 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           promptText: prompt,
-          ratio: ratio || '1280:768',
+          ratio: ratio || '1280:720',
           duration: duration || 5,
-          model: 'gen4_turbo'
+          model: 'gen4.5'
         })
       });
       const data = await response.json();
