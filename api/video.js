@@ -16,9 +16,7 @@ export default async function handler(req, res) {
     const { action, prompt, ratio, duration, taskId } = JSON.parse(raw);
 
     if (action === 'submit') {
-      // gen4.5 requires promptImage even in text-driven mode; neutral black frame keeps it from influencing the output
-      const BLACK_1X1_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVQI12NgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==';
-      const response = await fetch('https://api.dev.runwayml.com/v1/image_to_video', {
+      const response = await fetch('https://api.dev.runwayml.com/v1/text_to_video', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${process.env.RUNWAY_API_KEY}`,
@@ -28,7 +26,6 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: 'gen4.5',
           promptText: prompt,
-          promptImage: BLACK_1X1_PNG,
           ratio: ratio || '1280:720',
           duration: duration || 5
         })
