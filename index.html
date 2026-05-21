@@ -958,6 +958,65 @@ Voice selection: Do not select a voice_id. Leave voice_id as an empty string in 
 
   const SYSTEM_VOICE_TWEAK = `You receive a voiceover script and a tweak request. Produce a revised version of the script that applies the change. The script the user already has: {{PROMPT}}. Output the complete revised script only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions.`;
 
+  const SYSTEM_VIDEO = `You are nerlo — helping someone create a short AI-generated video. Your job is to understand what they want to see and translate it into a precise prompt for Runway Gen-4. Talk like a smart friend. Never mention you are collecting information. Never compliment the idea. Never express excitement. Warmth comes from sharp questions that show real understanding.
+
+LANGUAGE RULES — NO EXCEPTIONS:
+Never use "like" as a filler. Replace with "such as", "for example", or "for instance".
+Every response must open with a question or directly lead into one.
+Never use markdown formatting. Plain conversational prose only.
+
+PHRASE VARIATION RULE:
+When introducing examples, rotate: "such as", "for example", "for instance", "think:", "along the lines of", "say,". Never use the same phrase twice in a row.
+
+CONTENT RULES:
+
+1. NEVER ASK WHAT YOU ALREADY KNOW.
+Extract everything already answered from the user's messages before asking anything. If they described a sunset over the ocean, subject and setting are answered. Only ask about what is genuinely missing.
+
+2. NEVER REPEAT A QUESTION.
+Before forming any question, scan every prior message. If a topic is answered in any form, it is closed.
+
+3. NEVER REFERENCE YOUR OWN INTERNAL TRACKING.
+Never use phrases that expose your internal mechanics. Move to the next question without explanation.
+
+4. NEVER INVENT DETAILS.
+Only include in the final prompt what the user explicitly stated or confirmed.
+
+5. ONE QUESTION AT A TIME.
+Every question must change the output.
+
+6. USE ANCHORED STEERING FOR CINEMATIC VOCABULARY.
+Regular Joe knows what they want to feel but not how to describe it in cinematic terms. Never ask open questions about things they cannot answer without vocabulary. Use feeling-pairs and short option sets:
+— Instead of "what camera movement?" ask "does the camera stay still and let the scene breathe, slowly push in toward the subject, or pull back to reveal the setting?"
+— Instead of "what style?" ask "does this feel more photorealistic and grounded, dreamlike and stylized, or gritty and documentary?"
+— Instead of "what mood?" ask "does it feel warm and intimate, cold and tense, epic and sweeping, or calm and contemplative?"
+
+7. HARD CEILING OF 6 QUESTIONS.
+Topics to cover: subject and action, setting and environment, camera movement, mood and lighting, duration (5 or 10 seconds), style reference. Track what is answered. When enough is known, generate immediately. Never ask more than 6 questions. The ceiling is a maximum, not a target.
+
+8. DURATION — OFFER THE CHOICE.
+Runway supports 5 or 10 seconds. Ask once if not stated: "Should this be a quick 5-second clip or a fuller 10-second shot?" Then record the choice in the payload.
+
+9. ASPECT RATIO — INFER FROM CONTEXT.
+Landscape (16:9) is default. Portrait (9:16) if the user mentions phone, social story, TikTok, or vertical. Square (1:1) if mentioned explicitly. Do not ask about aspect ratio — infer it.
+
+LANGUAGE RULE:
+Always respond in the same language the user is writing in. The final JSON payload always stays in English.
+
+OUTPUT — WHEN READY:
+Respond with ONLY this — no text before or after:
+NERLO_VIDEO_PROMPT_READY
+{"tool":"runway","prompt":"","ratio":"","duration":,"reason":"the leading AI video tool — it turns a precise text prompt into a cinematic short clip."}
+
+ratio values: "1280:768" for landscape 16:9, "768:1280" for portrait 9:16, "1104:832" for square-ish
+duration: 5 or 10 (integer)
+
+Prompt format for Runway Gen-4:
+Write a single descriptive paragraph. Lead with the subject and what they are doing. Then describe the setting. Then camera movement. Then lighting and mood. Then style if a reference was given. Be specific and visual. Under 200 words. No markdown. No parameters.
+Example: A lone surfer paddles out into a glassy early morning ocean, the horizon glowing orange and pink as the sun breaks over distant hills. The camera slowly pushes in from behind, water droplets catching the light. Warm golden tones, cinematic and quiet. In the style of Terrence Malick.`;
+
+  const SYSTEM_VIDEO_TWEAK = `You receive a Runway video prompt and a tweak request. Produce a revised version of the full prompt that applies the change. The prompt the user already has: {{PROMPT}}. Output the complete revised prompt only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions. Keep it under 200 words.`;
+
   const SYSTEM_EDIT = `You read a product brief and a change request, then produce a single Lovable prompt that applies the change.
 
 The brief the user already built:
@@ -1002,6 +1061,10 @@ Rules — no exceptions:
   let voiceTweakMode = false;
   let voiceTweakCount = 0;
 
+  let videoPayload = null;
+  let videoTweakMode = false;
+  let videoTweakCount = 0;
+
   const IMAGE_TOOL_URLS = {
     midjourney: 'https://www.midjourney.com',
     flux: 'https://fal.ai/models/fal-ai/flux/dev',
@@ -1031,6 +1094,9 @@ Rules — no exceptions:
     elevenlabs_sfx: 'ElevenLabs',
     elevenlabs_voice: 'ElevenLabs'
   };
+
+  const VIDEO_TOOL_URLS = { runway: 'https://runwayml.com' };
+  const VIDEO_TOOL_LABELS = { runway: 'Runway' };
 
   // DOM
   const messagesEl = document.getElementById('messages');
@@ -1122,9 +1188,19 @@ Rules — no exceptions:
           selectMode('audio');
         });
 
+        const videoBtn = document.createElement('button');
+        videoBtn.className = 'btn btn-primary';
+        videoBtn.textContent = 'Generate a video';
+        videoBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        videoBtn.addEventListener('click', () => {
+          card.remove();
+          selectMode('video');
+        });
+
         card.appendChild(appBtn);
         card.appendChild(imgBtn);
         card.appendChild(audioBtn);
+        card.appendChild(videoBtn);
         innerEl.appendChild(card);
         scrollToBottom();
       }, 400);
@@ -1168,8 +1244,19 @@ Rules — no exceptions:
       }, 350);
       return;
     }
+    if (mode === 'video') {
+      currentMode = 'video';
+      inputEl.placeholder = 'describe what you want to see...';
+      addBubble('user', 'generate a video');
+      inputArea.style.display = '';
+      setTimeout(() => {
+        addBubble('nerlo', "Describe what you want to see. Don't worry about getting it perfect — that's what I'm here for.");
+        setInputEnabled(true);
+      }, 350);
+      return;
+    }
     currentMode = mode;
-    const userLabel = mode === 'app' ? 'build an app' : mode === 'image' ? 'generate an image' : 'create audio';
+    const userLabel = mode === 'app' ? 'build an app' : mode === 'image' ? 'generate an image' : mode === 'audio' ? 'create audio' : 'generate a video';
     addBubble('user', userLabel);
     inputArea.style.display = '';
     if (mode === 'app') {
@@ -1240,6 +1327,9 @@ Rules — no exceptions:
     voicePayload = null;
     voiceTweakMode = false;
     voiceTweakCount = 0;
+    videoPayload = null;
+    videoTweakMode = false;
+    videoTweakCount = 0;
     inputEl.placeholder = 'tell me what you want to build...';
     renderWelcome();
   }
@@ -1443,6 +1533,14 @@ Rules — no exceptions:
 
   function tryParseVoicePrompt(text) {
     if (!text || !text.includes('NERLO_VOICE_PROMPT_READY')) return null;
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+  }
+
+  function tryParseVideoPrompt(text) {
+    if (!text || !text.includes('NERLO_VIDEO_PROMPT_READY')) return null;
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
     if (start < 0 || end <= start) return null;
@@ -2658,6 +2756,271 @@ Rules — no exceptions:
     scrollToBottom();
   }
 
+  async function generateVideo(prompt, ratio, duration, triggerBtn) {
+    triggerBtn.textContent = 'submitting…';
+    triggerBtn.disabled = true;
+
+    document.getElementById('nerlo-video-card')?.remove();
+
+    const progressCard = document.createElement('div');
+    progressCard.className = 'brief-card';
+    progressCard.id = 'nerlo-video-card';
+    progressCard.style.cssText = 'padding:1.25rem 1.1rem;text-align:center;';
+    const progressText = document.createElement('p');
+    progressText.style.cssText = 'font-size:0.85rem;color:var(--cream-dim);';
+    progressText.textContent = 'generating… this usually takes 60–90 seconds';
+    progressCard.appendChild(progressText);
+    innerEl.appendChild(progressCard);
+    scrollToBottom();
+
+    try {
+      const submitRes = await fetch('/api/video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'submit', prompt, ratio, duration })
+      });
+      const submitData = await submitRes.json();
+      if (!submitData.taskId) throw new Error(submitData.error || 'submission failed');
+
+      triggerBtn.textContent = 'generating…';
+
+      const taskId = submitData.taskId;
+      let attempts = 0;
+      const maxAttempts = 60;
+
+      const poll = async () => {
+        if (attempts >= maxAttempts) throw new Error('generation timed out');
+        attempts++;
+
+        const pollRes = await fetch('/api/video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'poll', taskId })
+        });
+        const pollData = await pollRes.json();
+
+        if (pollData.status === 'succeeded' && pollData.url) {
+          return pollData.url;
+        } else if (pollData.status === 'failed') {
+          throw new Error(pollData.error || 'generation failed');
+        } else {
+          await new Promise(r => setTimeout(r, 3000));
+          return poll();
+        }
+      };
+
+      const videoUrl = await poll();
+
+      document.getElementById('nerlo-video-card')?.remove();
+
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+      card.id = 'nerlo-video-card';
+      card.style.cssText = 'padding:0;overflow:hidden;';
+
+      const video = document.createElement('video');
+      video.src = videoUrl;
+      video.controls = true;
+      video.autoplay = false;
+      video.loop = true;
+      video.style.cssText = 'width:100%;display:block;border-radius:13px;';
+
+      const footer = document.createElement('div');
+      footer.style.cssText = 'padding:0.85rem 1.1rem;display:flex;justify-content:flex-end;';
+
+      const dlLink = document.createElement('a');
+      dlLink.textContent = 'download →';
+      dlLink.href = videoUrl;
+      dlLink.target = '_blank';
+      dlLink.style.cssText = 'font-size:0.8rem;color:var(--cream-dim);text-decoration:none;';
+      dlLink.addEventListener('mouseover', () => dlLink.style.color = 'var(--star)');
+      dlLink.addEventListener('mouseout', () => dlLink.style.color = 'var(--cream-dim)');
+
+      footer.appendChild(dlLink);
+      card.appendChild(video);
+      card.appendChild(footer);
+      innerEl.appendChild(card);
+      scrollToBottom();
+
+      trackEvent('video');
+
+      triggerBtn.textContent = 'regenerate →';
+      triggerBtn.disabled = false;
+    } catch (err) {
+      document.getElementById('nerlo-video-card')?.remove();
+      triggerBtn.textContent = 'generation failed — try again';
+      triggerBtn.disabled = false;
+    }
+  }
+
+  function revealVideoPrompt(payload) {
+    videoPayload = payload;
+
+    addBubble('nerlo', 'Your prompt is ready. Based on what you want to create, Runway is ' + payload.reason + ' One click and we generate it here.');
+
+    setTimeout(() => {
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+
+      const header = document.createElement('div');
+      header.className = 'brief-card-header';
+
+      const label = document.createElement('span');
+      label.className = 'brief-card-label';
+      label.textContent = 'your prompt';
+      header.appendChild(label);
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'brief-section-body';
+      body.textContent = payload.prompt;
+      card.appendChild(body);
+
+      innerEl.appendChild(card);
+      scrollToBottom();
+    }, 500);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const generateBtn = document.createElement('button');
+      generateBtn.className = 'btn-build';
+      generateBtn.textContent = 'generate video →';
+      generateBtn.addEventListener('click', () => {
+        generateVideo(videoPayload.prompt, videoPayload.ratio, videoPayload.duration, generateBtn);
+      });
+
+      const tweakLink = document.createElement('a');
+      tweakLink.className = 'build-start-over';
+      tweakLink.textContent = 'request a tweak →';
+      tweakLink.href = '#';
+      tweakLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.target.closest('.build-row')?.remove();
+        enterVideoTweakMode();
+      });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-start-over';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetConversation();
+      });
+
+      row.appendChild(generateBtn);
+      row.appendChild(tweakLink);
+      row.appendChild(startOver);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function enterVideoTweakMode() {
+    videoTweakMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendVideoTweakMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_VIDEO_TWEAK.replace('{{PROMPT}}', () => videoPayload.prompt);
+
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'something went wrong. try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const revised = (data.content[0].text || '').trim();
+    videoTweakCount++;
+    videoTweakMode = false;
+    inputArea.style.display = 'none';
+    videoPayload = { ...videoPayload, prompt: revised };
+    showVideoTweakResult(revised);
+  }
+
+  function showVideoTweakResult(revised) {
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'revised prompt';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'brief-section-body';
+    body.textContent = revised;
+    card.appendChild(body);
+
+    innerEl.appendChild(card);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const alreadyGenerated = !!document.getElementById('nerlo-video-card');
+
+    const generateBtn = document.createElement('button');
+    generateBtn.className = 'btn-build';
+    generateBtn.textContent = alreadyGenerated ? 'regenerate →' : 'generate video →';
+    generateBtn.addEventListener('click', () => {
+      generateVideo(videoPayload.prompt, videoPayload.ratio, videoPayload.duration, generateBtn);
+    });
+
+    const anotherTweak = document.createElement('a');
+    anotherTweak.className = 'build-start-over';
+    anotherTweak.textContent = 'request another tweak →';
+    anotherTweak.href = '#';
+    anotherTweak.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.target.closest('.build-row')?.remove();
+      enterVideoTweakMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetConversation();
+    });
+
+    row.appendChild(generateBtn);
+    row.appendChild(anotherTweak);
+    row.appendChild(startOver);
+
+    if (videoTweakCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.textContent = "heads up — you've made a few tweaks. starting fresh with an updated description can produce better results.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
+
+    if (alreadyGenerated) {
+      generateBtn.click();
+    }
+  }
+
   function enterEditMode() {
     editMode = true;
     inputEl.placeholder = 'what would you like to change?';
@@ -2830,6 +3193,13 @@ Rules — no exceptions:
       revealVoicePrompt(voicePrompt);
       return;
     }
+    const videoPrompt = tryParseVideoPrompt(text);
+    if (videoPrompt) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      inputArea.style.display = 'none';
+      revealVideoPrompt(videoPrompt);
+      return;
+    }
     addBubble('nerlo', text);
     conversationHistory.push({ role: 'assistant', content: text });
     extractTopic();
@@ -2839,7 +3209,7 @@ Rules — no exceptions:
   // Main send flow
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode) || (sfxPayload && !sfxTweakMode) || (voicePayload && !voiceTweakMode)) return;
+    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode) || (sfxPayload && !sfxTweakMode) || (voicePayload && !voiceTweakMode) || (videoPayload && !videoTweakMode)) return;
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
@@ -2869,6 +3239,11 @@ Rules — no exceptions:
       return;
     }
 
+    if (videoTweakMode) {
+      await sendVideoTweakMessage(text);
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
@@ -2885,6 +3260,12 @@ Rules — no exceptions:
     if (currentMode === 'audio') {
       const systemPrompt = audioSubMode === 'sfx' ? SYSTEM_SFX : audioSubMode === 'voice' ? SYSTEM_VOICE : SYSTEM_AUDIO;
       const intakeData = await callAPI(systemPrompt, conversationHistory.map(m => ({ role: m.role, content: m.content })));
+      await deliverAssistantResponse(intakeData);
+      return;
+    }
+
+    if (currentMode === 'video') {
+      const intakeData = await callAPI(SYSTEM_VIDEO, conversationHistory.map(m => ({ role: m.role, content: m.content })));
       await deliverAssistantResponse(intakeData);
       return;
     }
