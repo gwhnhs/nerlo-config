@@ -31,6 +31,7 @@ export default async function handler(req, res) {
         })
       });
       const data = await response.json();
+      console.error('Runway response:', JSON.stringify(data));
       if (!response.ok || !data.id) {
         return res.status(502).json({ error: data.error || data.message || JSON.stringify(data) });
       }
