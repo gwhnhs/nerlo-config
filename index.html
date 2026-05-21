@@ -1181,7 +1181,7 @@ Rules — no exceptions:
 
         const audioBtn = document.createElement('button');
         audioBtn.className = 'btn btn-primary';
-        audioBtn.textContent = 'Create audio';
+        audioBtn.textContent = 'Make music or audio';
         audioBtn.style.cssText = 'text-align:left;border-radius:100px;';
         audioBtn.addEventListener('click', () => {
           card.remove();
@@ -1190,7 +1190,7 @@ Rules — no exceptions:
 
         const videoBtn = document.createElement('button');
         videoBtn.className = 'btn btn-primary';
-        videoBtn.textContent = 'Generate a video';
+        videoBtn.textContent = 'Create a video';
         videoBtn.style.cssText = 'text-align:left;border-radius:100px;';
         videoBtn.addEventListener('click', () => {
           card.remove();
@@ -1210,7 +1210,7 @@ Rules — no exceptions:
   function selectMode(mode) {
     if (mode === 'audio') {
       currentMode = 'audio';
-      addBubble('user', 'create audio');
+      addBubble('user', 'make music or audio');
       setTimeout(() => {
         addBubble('nerlo', 'What kind of audio are you looking to create?');
         setTimeout(() => {
@@ -1247,7 +1247,7 @@ Rules — no exceptions:
     if (mode === 'video') {
       currentMode = 'video';
       inputEl.placeholder = 'describe what you want to see...';
-      addBubble('user', 'generate a video');
+      addBubble('user', 'create a video');
       inputArea.style.display = '';
       setTimeout(() => {
         addBubble('nerlo', "Describe what you want to see. Don't worry about getting it perfect — that's what I'm here for.");
@@ -1256,7 +1256,7 @@ Rules — no exceptions:
       return;
     }
     currentMode = mode;
-    const userLabel = mode === 'app' ? 'build an app' : mode === 'image' ? 'generate an image' : mode === 'audio' ? 'create audio' : 'generate a video';
+    const userLabel = mode === 'app' ? 'build an app' : mode === 'image' ? 'generate an image' : mode === 'audio' ? 'make music or audio' : 'create a video';
     addBubble('user', userLabel);
     inputArea.style.display = '';
     if (mode === 'app') {
