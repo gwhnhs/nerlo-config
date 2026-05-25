@@ -1160,12 +1160,12 @@ Rules — no exceptions:
 
       setTimeout(() => {
         const card = document.createElement('div');
-        card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
+        card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:86%;align-items:stretch;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
 
         const appBtn = document.createElement('button');
         appBtn.className = 'btn btn-primary';
         appBtn.textContent = 'Build an app';
-        appBtn.style.cssText = 'text-align:left;';
+        appBtn.style.cssText = 'text-align:left;height:100%;';
         appBtn.addEventListener('click', () => {
           card.remove();
           selectMode('app');
@@ -1174,7 +1174,7 @@ Rules — no exceptions:
         const imgBtn = document.createElement('button');
         imgBtn.className = 'btn btn-primary';
         imgBtn.textContent = 'Generate an image';
-        imgBtn.style.cssText = 'text-align:left;';
+        imgBtn.style.cssText = 'text-align:left;height:100%;';
         imgBtn.addEventListener('click', () => {
           card.remove();
           selectMode('image');
@@ -1183,7 +1183,7 @@ Rules — no exceptions:
         const audioBtn = document.createElement('button');
         audioBtn.className = 'btn btn-primary';
         audioBtn.textContent = 'Make music or audio';
-        audioBtn.style.cssText = 'text-align:left;';
+        audioBtn.style.cssText = 'text-align:left;height:100%;';
         audioBtn.addEventListener('click', () => {
           card.remove();
           selectMode('audio');
@@ -1192,7 +1192,7 @@ Rules — no exceptions:
         const videoBtn = document.createElement('button');
         videoBtn.className = 'btn btn-primary';
         videoBtn.textContent = 'Create a video';
-        videoBtn.style.cssText = 'text-align:left;';
+        videoBtn.style.cssText = 'text-align:left;height:100%;';
         videoBtn.addEventListener('click', () => {
           card.remove();
           selectMode('video');
