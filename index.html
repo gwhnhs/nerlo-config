@@ -1029,6 +1029,79 @@ Keep the final prompt under 800 characters. Be specific and descriptive but conc
 
   const SYSTEM_VIDEO_TWEAK = `You receive a Runway video prompt and a tweak request. Produce a revised version of the full prompt that applies the change. The prompt the user already has: {{PROMPT}}. Output the complete revised prompt only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions. Keep it under 200 words.`;
 
+  const SYSTEM_AUTOMATION = `You are nerlo — helping someone automate a repetitive task they currently do manually. Your job is to understand exactly what they want to automate and translate it into a structured brief any automation tool can follow. Talk like a smart friend who genuinely wants to understand what they are trying to do. Never mention you are collecting information. Never compliment the idea. Never express excitement. Get straight to the point.
+
+LANGUAGE RULES — NO EXCEPTIONS:
+Never use "like" as a filler, connector, or example introducer. Replace with "such as", "for example", or "for instance".
+Every response must open with a question or directly lead into one. Never open with a declarative statement about what the user said.
+Never use markdown formatting — no asterisks, bullets, bold, headers, or lists. Plain conversational prose only.
+
+CONTENT RULES:
+
+1. NEVER ASK WHAT YOU ALREADY KNOW.
+Extract everything already answered from the user's messages before asking anything. Only ask about what is genuinely missing.
+
+2. NEVER REPEAT A QUESTION.
+Before forming any question, scan every prior message. If a topic is answered in any form, it is closed.
+
+3. NEVER INVENT DETAILS.
+Only include in the final brief what the user explicitly stated or confirmed.
+
+4. ONE QUESTION AT A TIME.
+Every question must change the output.
+
+5. HARD CEILING OF 7 QUESTIONS.
+The seven topics nerlo must cover are:
+- Trigger: what kicks this off — something the user does, something someone else does, or a schedule
+- Source app: which app or tool the trigger happens in
+- Destination and action: what should happen and where
+- Conditions: whether it always fires or only under certain rules
+- Access: whether the user has accounts in both apps
+- Additional steps: anything else that needs to happen after the first action
+- Volume and frequency: how often this is expected to run
+
+Track which topics are answered. When all are covered or additional questions would not change the output, generate the brief immediately. Hard ceiling: never ask more than 7 questions. The ceiling is a maximum, not a target.
+
+TOOL SELECTION — INTERNAL, NEVER MENTIONED:
+Select one tool based on the conversation. Never name the tool during intake.
+Select Zapier when: the workflow is simple, one or two steps, no conditions, low-to-medium volume, no technical signals from the user. Default for Regular Joe.
+Select Make when: the workflow has multiple steps, data transformation is needed, or the logic is visually complex.
+Select n8n when: the user signals high volume, self-hosted preference, developer comfort, or complex branching conditions.
+
+LANGUAGE RULE:
+Always respond in the same language the user is writing in. The final JSON payload always stays in English.
+
+OUTPUT — WHEN READY:
+Respond with ONLY this — no text before or after:
+NERLO_AUTOMATION_BRIEF_READY
+{"tool":"zapier","brief":"<brief string>","reason":"<reason string>"}
+
+tool must be exactly one of: zapier, make, n8n
+
+Reason strings — use exactly:
+zapier: "the right fit for straightforward automations — no code needed, and it connects to thousands of apps out of the box."
+make: "built for multi-step workflows with complex logic — its visual canvas makes it easier to map out exactly what you described."
+n8n: "the right fit here — it handles high-volume or complex workflows and gives you full control over every step."
+
+Brief format — plain text, no markdown, ALL CAPS headings, blank line between sections:
+
+WORKFLOW SUMMARY
+One plain-English sentence describing exactly what this automation does.
+
+TRIGGER
+The exact event that starts the workflow and which app it lives in.
+
+CONDITIONS
+Any filters or rules that must be true before the actions fire. If none, write: None — this automation fires every time the trigger occurs.
+
+ACTIONS
+Numbered list of every step that happens in order, written as plain instructions.
+
+SETUP NOTES
+Access requirements, any data formatting needed between steps, and a note that if the automation fails, the tool will send an email notification that can be used to retry.`;
+
+  const SYSTEM_AUTOMATION_TWEAK = `You receive an automation brief and a tweak request. Produce a revised version of the full brief that applies the change. The brief the user already has: {{BRIEF}}. Output the complete revised brief only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions. Preserve all five section headings.`;
+
   const SYSTEM_EDIT = `You read a product brief and a change request, then produce a single Lovable prompt that applies the change.
 
 The brief the user already built:
@@ -1077,6 +1150,10 @@ Rules — no exceptions:
   let videoTweakMode = false;
   let videoTweakCount = 0;
 
+  let automationPayload = null;
+  let automationTweakMode = false;
+  let automationTweakCount = 0;
+
   const IMAGE_TOOL_URLS = {
     midjourney: 'https://www.midjourney.com',
     flux: 'https://fal.ai/models/fal-ai/flux/dev',
@@ -1109,6 +1186,18 @@ Rules — no exceptions:
 
   const VIDEO_TOOL_URLS = { runway: 'https://runwayml.com' };
   const VIDEO_TOOL_LABELS = { runway: 'Runway' };
+
+  const AUTOMATION_TOOL_URLS = {
+    zapier: 'https://zapier.com',
+    make: 'https://make.com',
+    n8n: 'https://n8n.io'
+  };
+
+  const AUTOMATION_TOOL_LABELS = {
+    zapier: 'Zapier',
+    make: 'Make',
+    n8n: 'n8n'
+  };
 
   // DOM
   const messagesEl = document.getElementById('messages');
@@ -1210,10 +1299,20 @@ Rules — no exceptions:
           selectMode('video');
         });
 
+        const automationBtn = document.createElement('button');
+        automationBtn.className = 'btn btn-primary';
+        automationBtn.textContent = 'Automate a task';
+        automationBtn.style.cssText = 'text-align:left;height:100%;';
+        automationBtn.addEventListener('click', () => {
+          card.remove();
+          selectMode('automation');
+        });
+
         card.appendChild(appBtn);
         card.appendChild(imgBtn);
         card.appendChild(audioBtn);
         card.appendChild(videoBtn);
+        card.appendChild(automationBtn);
         innerEl.appendChild(card);
         scrollToBottom();
       }, 400);
@@ -1264,6 +1363,17 @@ Rules — no exceptions:
       inputArea.style.display = '';
       setTimeout(() => {
         addBubble('nerlo', "Describe what you want to see. Don't worry about getting it perfect — that's what I'm here for.");
+        setInputEnabled(true);
+      }, 350);
+      return;
+    }
+    if (mode === 'automation') {
+      currentMode = 'automation';
+      inputEl.placeholder = 'describe what you want to automate...';
+      addBubble('user', 'automate a task');
+      inputArea.style.display = '';
+      setTimeout(() => {
+        addBubble('nerlo', "Tell me what you want to automate. Don't worry about the technical side — that's what I'm here for.");
         setInputEnabled(true);
       }, 350);
       return;
@@ -1343,6 +1453,9 @@ Rules — no exceptions:
     videoPayload = null;
     videoTweakMode = false;
     videoTweakCount = 0;
+    automationPayload = null;
+    automationTweakMode = false;
+    automationTweakCount = 0;
     inputEl.placeholder = 'tell me what you want to build...';
     renderWelcome();
   }
@@ -1558,6 +1671,15 @@ Rules — no exceptions:
     const end = text.lastIndexOf('}');
     if (start < 0 || end <= start) return null;
     try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+  }
+
+  function tryParseAutomationBrief(text) {
+    if (!text.includes('NERLO_AUTOMATION_BRIEF_READY')) return null;
+    try {
+      const m = text.match(/NERLO_AUTOMATION_BRIEF_READY\s*(\{[\s\S]*\})/);
+      if (!m) return null;
+      return JSON.parse(m[1]);
+    } catch { return null; }
   }
 
   function showBrief(brief) {
@@ -3034,6 +3156,201 @@ Rules — no exceptions:
     }
   }
 
+  function parseAutomationBriefSections(brief) {
+    const sectionNames = ['WORKFLOW SUMMARY', 'TRIGGER', 'CONDITIONS', 'ACTIONS', 'SETUP NOTES'];
+    const sections = [];
+    for (let i = 0; i < sectionNames.length; i++) {
+      const name = sectionNames[i];
+      const next = sectionNames[i + 1];
+      const start = brief.indexOf(name);
+      if (start === -1) continue;
+      const contentStart = start + name.length;
+      const end = next ? brief.indexOf(next, contentStart) : brief.length;
+      const body = brief.slice(contentStart, end !== -1 ? end : brief.length).replace(/^\s*[\n:]+/, '').trim();
+      sections.push({ title: name, body });
+    }
+    return sections;
+  }
+
+  function buildAutomationBriefBubble(brief) {
+    const bubble = document.createElement('div');
+    bubble.className = 'brief-bubble';
+    const sections = parseAutomationBriefSections(brief);
+    sections.forEach((sec, i) => {
+      const section = document.createElement('div');
+      section.className = 'brief-section';
+      if (i === sections.length - 1) section.style.marginBottom = '0';
+
+      const title = document.createElement('div');
+      title.className = 'brief-section-title';
+      title.textContent = sec.title;
+
+      const body = document.createElement('div');
+      body.className = 'brief-section-body';
+      body.textContent = sec.body;
+
+      section.appendChild(title);
+      section.appendChild(body);
+      bubble.appendChild(section);
+    });
+    return bubble;
+  }
+
+  function revealAutomationBrief(payload) {
+    automationPayload = payload;
+    const toolLabel = AUTOMATION_TOOL_LABELS[payload.tool] || payload.tool;
+    const toolUrl = AUTOMATION_TOOL_URLS[payload.tool] || 'https://zapier.com';
+
+    addBubble('nerlo', 'Your automation brief is ready. Based on what you want to automate, ' + toolLabel + ' is ' + payload.reason + ' Follow the brief below to build it.');
+
+    setTimeout(() => {
+      const bubble = buildAutomationBriefBubble(payload.brief);
+      innerEl.appendChild(bubble);
+      scrollToBottom();
+      trackEvent('automation');
+    }, 500);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const openBtn = document.createElement('button');
+      openBtn.className = 'btn-build';
+      openBtn.textContent = 'Open ' + toolLabel + ' →';
+      openBtn.addEventListener('click', () => {
+        window.open(toolUrl, '_blank');
+      });
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-primary';
+      copyBtn.textContent = 'Copy brief →';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(automationPayload.brief).then(() => {
+          copyBtn.textContent = 'copied ✓';
+          setTimeout(() => { copyBtn.textContent = 'Copy brief →'; }, 2000);
+        });
+      });
+
+      const tweakBtn = document.createElement('button');
+      tweakBtn.className = 'btn btn-secondary';
+      tweakBtn.textContent = 'Request a tweak →';
+      tweakBtn.addEventListener('click', (e) => {
+        e.target.closest('.build-row')?.remove();
+        enterAutomationTweakMode();
+      });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-start-over';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetConversation();
+      });
+
+      row.appendChild(openBtn);
+      row.appendChild(copyBtn);
+      row.appendChild(tweakBtn);
+      row.appendChild(startOver);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function enterAutomationTweakMode() {
+    automationTweakMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendAutomationTweakMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_AUTOMATION_TWEAK.replace('{{BRIEF}}', () => automationPayload.brief);
+
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'something went wrong. try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const revised = (data.content[0].text || '').trim();
+    automationTweakCount++;
+    automationTweakMode = false;
+    inputArea.style.display = 'none';
+    automationPayload = { ...automationPayload, brief: revised };
+    showAutomationTweakResult(revised);
+  }
+
+  function showAutomationTweakResult(revised) {
+    const toolLabel = AUTOMATION_TOOL_LABELS[automationPayload.tool] || automationPayload.tool;
+    const toolUrl = AUTOMATION_TOOL_URLS[automationPayload.tool] || 'https://zapier.com';
+
+    const bubble = buildAutomationBriefBubble(revised);
+    innerEl.appendChild(bubble);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const openBtn = document.createElement('button');
+    openBtn.className = 'btn-build';
+    openBtn.textContent = 'Open ' + toolLabel + ' →';
+    openBtn.addEventListener('click', () => {
+      window.open(toolUrl, '_blank');
+    });
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn btn-primary';
+    copyBtn.textContent = 'Copy brief →';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(revised).then(() => {
+        copyBtn.textContent = 'copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy brief →'; }, 2000);
+      });
+    });
+
+    const anotherTweak = document.createElement('button');
+    anotherTweak.className = 'btn btn-secondary';
+    anotherTweak.textContent = 'Request another tweak →';
+    anotherTweak.addEventListener('click', (e) => {
+      e.target.closest('.build-row')?.remove();
+      enterAutomationTweakMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetConversation();
+    });
+
+    row.appendChild(openBtn);
+    row.appendChild(copyBtn);
+    row.appendChild(anotherTweak);
+    row.appendChild(startOver);
+
+    if (automationTweakCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.textContent = "heads up — you've made a few tweaks. starting fresh with an updated description can produce better results.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
+  }
+
   function enterEditMode() {
     editMode = true;
     inputEl.placeholder = 'what would you like to change?';
@@ -3213,6 +3530,13 @@ Rules — no exceptions:
       revealVideoPrompt(videoPrompt);
       return;
     }
+    const automationBrief = tryParseAutomationBrief(text);
+    if (automationBrief) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      inputArea.style.display = 'none';
+      revealAutomationBrief(automationBrief);
+      return;
+    }
     addBubble('nerlo', text);
     conversationHistory.push({ role: 'assistant', content: text });
     extractTopic();
@@ -3222,7 +3546,7 @@ Rules — no exceptions:
   // Main send flow
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode) || (sfxPayload && !sfxTweakMode) || (voicePayload && !voiceTweakMode) || (videoPayload && !videoTweakMode)) return;
+    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode) || (sfxPayload && !sfxTweakMode) || (voicePayload && !voiceTweakMode) || (videoPayload && !videoTweakMode) || (automationPayload && !automationTweakMode)) return;
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
@@ -3257,6 +3581,11 @@ Rules — no exceptions:
       return;
     }
 
+    if (automationTweakMode) {
+      await sendAutomationTweakMessage(text);
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
@@ -3279,6 +3608,12 @@ Rules — no exceptions:
 
     if (currentMode === 'video') {
       const intakeData = await callAPI(SYSTEM_VIDEO, conversationHistory.map(m => ({ role: m.role, content: m.content })));
+      await deliverAssistantResponse(intakeData);
+      return;
+    }
+
+    if (currentMode === 'automation') {
+      const intakeData = await callAPI(SYSTEM_AUTOMATION, conversationHistory.map(m => ({ role: m.role, content: m.content })));
       await deliverAssistantResponse(intakeData);
       return;
     }
