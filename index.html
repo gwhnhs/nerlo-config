@@ -1468,7 +1468,7 @@ Rules — no exceptions:
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 2000,
-        system: systemPrompt,
+        system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages
       })
     });
@@ -1997,12 +1997,11 @@ Rules — no exceptions:
         window.open(toolUrl, '_blank');
       });
 
-      const tweakLink = document.createElement('a');
-      tweakLink.className = 'build-start-over';
+      const tweakLink = document.createElement('button');
+      tweakLink.className = 'btn-build';
       tweakLink.textContent = 'request a tweak →';
-      tweakLink.href = '#';
+      tweakLink.style.width = '100%';
       tweakLink.addEventListener('click', (e) => {
-        e.preventDefault();
         e.target.closest('.build-row')?.remove();
         enterImageTweakMode();
       });
@@ -2112,12 +2111,11 @@ Rules — no exceptions:
       window.open(toolUrl, '_blank');
     });
 
-    const anotherTweak = document.createElement('a');
-    anotherTweak.className = 'build-start-over';
+    const anotherTweak = document.createElement('button');
+    anotherTweak.className = 'btn-build';
     anotherTweak.textContent = 'request another tweak →';
-    anotherTweak.href = '#';
+    anotherTweak.style.width = '100%';
     anotherTweak.addEventListener('click', (e) => {
-      e.preventDefault();
       e.target.closest('.build-row')?.remove();
       enterImageTweakMode();
     });
@@ -2270,12 +2268,11 @@ Rules — no exceptions:
         window.open(toolUrl, '_blank');
       });
 
-      const tweakLink = document.createElement('a');
-      tweakLink.className = 'build-start-over';
+      const tweakLink = document.createElement('button');
+      tweakLink.className = 'btn-build';
       tweakLink.textContent = 'request a tweak →';
-      tweakLink.href = '#';
+      tweakLink.style.width = '100%';
       tweakLink.addEventListener('click', (e) => {
-        e.preventDefault();
         e.target.closest('.build-row')?.remove();
         enterAudioTweakMode();
       });
@@ -2364,12 +2361,11 @@ Rules — no exceptions:
       window.open(toolUrl, '_blank');
     });
 
-    const anotherTweak = document.createElement('a');
-    anotherTweak.className = 'build-start-over';
+    const anotherTweak = document.createElement('button');
+    anotherTweak.className = 'btn-build';
     anotherTweak.textContent = 'request another tweak →';
-    anotherTweak.href = '#';
+    anotherTweak.style.width = '100%';
     anotherTweak.addEventListener('click', (e) => {
-      e.preventDefault();
       e.target.closest('.build-row')?.remove();
       enterAudioTweakMode();
     });
@@ -2440,12 +2436,11 @@ Rules — no exceptions:
         generateElevenLabsAudio('sfx', sfxPayload.prompt, null, generateBtn);
       });
 
-      const tweakLink = document.createElement('a');
-      tweakLink.className = 'build-start-over';
+      const tweakLink = document.createElement('button');
+      tweakLink.className = 'btn-build';
       tweakLink.textContent = 'request a tweak →';
-      tweakLink.href = '#';
+      tweakLink.style.width = '100%';
       tweakLink.addEventListener('click', (e) => {
-        e.preventDefault();
         e.target.closest('.build-row')?.remove();
         enterSfxTweakMode();
       });
@@ -2529,12 +2524,11 @@ Rules — no exceptions:
       generateElevenLabsAudio('sfx', sfxPayload.prompt, null, generateBtn);
     });
 
-    const anotherTweak = document.createElement('a');
-    anotherTweak.className = 'build-start-over';
+    const anotherTweak = document.createElement('button');
+    anotherTweak.className = 'btn-build';
     anotherTweak.textContent = 'request another tweak →';
-    anotherTweak.href = '#';
+    anotherTweak.style.width = '100%';
     anotherTweak.addEventListener('click', (e) => {
-      e.preventDefault();
       e.target.closest('.build-row')?.remove();
       enterSfxTweakMode();
     });
@@ -2774,12 +2768,11 @@ Rules — no exceptions:
       const row = document.createElement('div');
       row.className = 'build-row';
 
-      const tweakLink = document.createElement('a');
-      tweakLink.className = 'build-start-over';
+      const tweakLink = document.createElement('button');
+      tweakLink.className = 'btn-build';
       tweakLink.textContent = 'request a tweak →';
-      tweakLink.href = '#';
+      tweakLink.style.width = '100%';
       tweakLink.addEventListener('click', (e) => {
-        e.preventDefault();
         e.target.closest('.build-row')?.remove();
         enterVoiceTweakMode();
       });
@@ -2855,12 +2848,11 @@ Rules — no exceptions:
     const row = document.createElement('div');
     row.className = 'build-row';
 
-    const anotherTweak = document.createElement('a');
-    anotherTweak.className = 'build-start-over';
+    const anotherTweak = document.createElement('button');
+    anotherTweak.className = 'btn-build';
     anotherTweak.textContent = 'request another tweak →';
-    anotherTweak.href = '#';
+    anotherTweak.style.width = '100%';
     anotherTweak.addEventListener('click', (e) => {
-      e.preventDefault();
       e.target.closest('.build-row')?.remove();
       enterVoiceTweakMode();
     });
@@ -3026,12 +3018,11 @@ Rules — no exceptions:
         generateVideo(videoPayload.prompt, videoPayload.ratio, videoPayload.duration, generateBtn);
       });
 
-      const tweakLink = document.createElement('a');
-      tweakLink.className = 'build-start-over';
+      const tweakLink = document.createElement('button');
+      tweakLink.className = 'btn-build';
       tweakLink.textContent = 'request a tweak →';
-      tweakLink.href = '#';
+      tweakLink.style.width = '100%';
       tweakLink.addEventListener('click', (e) => {
-        e.preventDefault();
         e.target.closest('.build-row')?.remove();
         enterVideoTweakMode();
       });
@@ -3115,12 +3106,11 @@ Rules — no exceptions:
       generateVideo(videoPayload.prompt, videoPayload.ratio, videoPayload.duration, generateBtn);
     });
 
-    const anotherTweak = document.createElement('a');
-    anotherTweak.className = 'build-start-over';
+    const anotherTweak = document.createElement('button');
+    anotherTweak.className = 'btn-build';
     anotherTweak.textContent = 'request another tweak →';
-    anotherTweak.href = '#';
+    anotherTweak.style.width = '100%';
     anotherTweak.addEventListener('click', (e) => {
-      e.preventDefault();
       e.target.closest('.build-row')?.remove();
       enterVideoTweakMode();
     });
