@@ -299,17 +299,18 @@
       font-family: 'DM Sans', sans-serif;
       font-size: 0.83rem;
       font-weight: 500;
-      padding: 0.55rem 1.05rem;
-      border-radius: 100px;
+      padding: 0.875rem 1.05rem;
+      border-radius: 10px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s, border-color 0.2s;
       border: 1px solid transparent;
     }
     .btn-primary {
-      background: var(--star);
-      color: var(--bg);
+      background: transparent;
+      color: var(--cream);
+      border-color: var(--star);
     }
-    .btn-primary:hover { background: var(--cream); }
+    .btn-primary:hover { background: rgba(138, 171, 220, 0.10); }
     .btn-secondary {
       background: transparent;
       color: var(--cream-dim);
@@ -463,19 +464,19 @@
     }
 
     .btn-build {
-      padding: 0.75rem 1.5rem;
-      background: var(--star);
-      border: none;
-      border-radius: 100px;
-      color: var(--bg);
+      padding: 0.875rem 1.5rem;
+      background: transparent;
+      border: 1px solid var(--star);
+      border-radius: 10px;
+      color: var(--cream);
       font-family: 'DM Sans', sans-serif;
       font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, border-color 0.2s;
     }
 
-    .btn-build:hover { background: var(--cream); }
+    .btn-build:hover { background: rgba(138, 171, 220, 0.10); }
 
     .build-alt {
       font-size: 0.8rem;
@@ -1159,12 +1160,12 @@ Rules — no exceptions:
 
       setTimeout(() => {
         const card = document.createElement('div');
-        card.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;align-self:flex-start;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
+        card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
 
         const appBtn = document.createElement('button');
         appBtn.className = 'btn btn-primary';
         appBtn.textContent = 'Build an app';
-        appBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        appBtn.style.cssText = 'text-align:left;';
         appBtn.addEventListener('click', () => {
           card.remove();
           selectMode('app');
@@ -1173,7 +1174,7 @@ Rules — no exceptions:
         const imgBtn = document.createElement('button');
         imgBtn.className = 'btn btn-primary';
         imgBtn.textContent = 'Generate an image';
-        imgBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        imgBtn.style.cssText = 'text-align:left;';
         imgBtn.addEventListener('click', () => {
           card.remove();
           selectMode('image');
@@ -1182,7 +1183,7 @@ Rules — no exceptions:
         const audioBtn = document.createElement('button');
         audioBtn.className = 'btn btn-primary';
         audioBtn.textContent = 'Make music or audio';
-        audioBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        audioBtn.style.cssText = 'text-align:left;';
         audioBtn.addEventListener('click', () => {
           card.remove();
           selectMode('audio');
@@ -1191,7 +1192,7 @@ Rules — no exceptions:
         const videoBtn = document.createElement('button');
         videoBtn.className = 'btn btn-primary';
         videoBtn.textContent = 'Create a video';
-        videoBtn.style.cssText = 'text-align:left;border-radius:100px;';
+        videoBtn.style.cssText = 'text-align:left;';
         videoBtn.addEventListener('click', () => {
           card.remove();
           selectMode('video');
@@ -1220,19 +1221,19 @@ Rules — no exceptions:
           const musicBtn = document.createElement('button');
           musicBtn.className = 'btn btn-primary';
           musicBtn.textContent = 'Music or a song';
-          musicBtn.style.cssText = 'text-align:left;border-radius:100px;';
+          musicBtn.style.cssText = 'text-align:left;';
           musicBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('music'); });
 
           const sfxBtn = document.createElement('button');
           sfxBtn.className = 'btn btn-primary';
           sfxBtn.textContent = 'A sound effect';
-          sfxBtn.style.cssText = 'text-align:left;border-radius:100px;';
+          sfxBtn.style.cssText = 'text-align:left;';
           sfxBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('sfx'); });
 
           const voiceBtn = document.createElement('button');
           voiceBtn.className = 'btn btn-primary';
           voiceBtn.textContent = 'A voiceover or narration';
-          voiceBtn.style.cssText = 'text-align:left;border-radius:100px;';
+          voiceBtn.style.cssText = 'text-align:left;';
           voiceBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('voice'); });
 
           card.appendChild(musicBtn);
