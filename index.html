@@ -1023,7 +1023,9 @@ duration: 5 or 10 (integer)
 
 Prompt format for Runway Gen-4:
 Write a single descriptive paragraph. Lead with the subject and what they are doing. Then describe the setting. Then camera movement. Then lighting and mood. Then style if a reference was given. Be specific and visual. Under 200 words. No markdown. No parameters.
-Example: A lone surfer paddles out into a glassy early morning ocean, the horizon glowing orange and pink as the sun breaks over distant hills. The camera slowly pushes in from behind, water droplets catching the light. Warm golden tones, cinematic and quiet. In the style of Terrence Malick.`;
+Example: A lone surfer paddles out into a glassy early morning ocean, the horizon glowing orange and pink as the sun breaks over distant hills. The camera slowly pushes in from behind, water droplets catching the light. Warm golden tones, cinematic and quiet. In the style of Terrence Malick.
+
+Keep the final prompt under 800 characters. Be specific and descriptive but concise — cut filler words and redundant detail before hitting the limit.`;
 
   const SYSTEM_VIDEO_TWEAK = `You receive a Runway video prompt and a tweak request. Produce a revised version of the full prompt that applies the change. The prompt the user already has: {{PROMPT}}. Output the complete revised prompt only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions. Keep it under 200 words.`;
 
