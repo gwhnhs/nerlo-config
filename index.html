@@ -563,11 +563,20 @@
       min-height: 300px;
     }
 
+    .welcome-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      max-width: 86%;
+      align-items: stretch;
+    }
+
     @media (max-width: 600px) {
       nav { padding: 0.85rem 1.1rem; }
       .messages { padding: 1.5rem 1rem 9rem; }
       .input-area { padding: 0.7rem 0.9rem 0.85rem; }
       .bubble { font-size: 0.92rem; }
+      .welcome-grid { grid-template-columns: 1fr; }
     }
   </style>
   <!-- Privacy-friendly analytics by Plausible -->
@@ -1160,7 +1169,8 @@ Rules — no exceptions:
 
       setTimeout(() => {
         const card = document.createElement('div');
-        card.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:86%;align-items:stretch;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
+        card.className = 'welcome-grid';
+        card.style.cssText = 'opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
 
         const appBtn = document.createElement('button');
         appBtn.className = 'btn btn-primary';
