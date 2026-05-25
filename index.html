@@ -3214,15 +3214,9 @@ Rules — no exceptions:
       const row = document.createElement('div');
       row.className = 'build-row';
 
-      const openBtn = document.createElement('button');
-      openBtn.className = 'btn-build';
-      openBtn.textContent = 'Open ' + toolLabel + ' →';
-      openBtn.addEventListener('click', () => {
-        window.open(toolUrl, '_blank');
-      });
-
       const copyBtn = document.createElement('button');
-      copyBtn.className = 'btn btn-primary';
+      copyBtn.className = 'btn-build';
+      copyBtn.style.width = '100%';
       copyBtn.textContent = 'Copy brief →';
       copyBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(automationPayload.brief).then(() => {
@@ -3231,8 +3225,17 @@ Rules — no exceptions:
         });
       });
 
+      const openBtn = document.createElement('button');
+      openBtn.className = 'btn-build';
+      openBtn.style.width = '100%';
+      openBtn.textContent = 'Open ' + toolLabel + ' →';
+      openBtn.addEventListener('click', () => {
+        window.open(toolUrl, '_blank');
+      });
+
       const tweakBtn = document.createElement('button');
-      tweakBtn.className = 'btn btn-secondary';
+      tweakBtn.className = 'btn-build';
+      tweakBtn.style.width = '100%';
       tweakBtn.textContent = 'Request a tweak →';
       tweakBtn.addEventListener('click', (e) => {
         e.target.closest('.build-row')?.remove();
@@ -3248,8 +3251,8 @@ Rules — no exceptions:
         resetConversation();
       });
 
-      row.appendChild(openBtn);
       row.appendChild(copyBtn);
+      row.appendChild(openBtn);
       row.appendChild(tweakBtn);
       row.appendChild(startOver);
       innerEl.appendChild(row);
@@ -3298,15 +3301,9 @@ Rules — no exceptions:
     const row = document.createElement('div');
     row.className = 'build-row';
 
-    const openBtn = document.createElement('button');
-    openBtn.className = 'btn-build';
-    openBtn.textContent = 'Open ' + toolLabel + ' →';
-    openBtn.addEventListener('click', () => {
-      window.open(toolUrl, '_blank');
-    });
-
     const copyBtn = document.createElement('button');
-    copyBtn.className = 'btn btn-primary';
+    copyBtn.className = 'btn-build';
+    copyBtn.style.width = '100%';
     copyBtn.textContent = 'Copy brief →';
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(revised).then(() => {
@@ -3315,8 +3312,17 @@ Rules — no exceptions:
       });
     });
 
+    const openBtn = document.createElement('button');
+    openBtn.className = 'btn-build';
+    openBtn.style.width = '100%';
+    openBtn.textContent = 'Open ' + toolLabel + ' →';
+    openBtn.addEventListener('click', () => {
+      window.open(toolUrl, '_blank');
+    });
+
     const anotherTweak = document.createElement('button');
-    anotherTweak.className = 'btn btn-secondary';
+    anotherTweak.className = 'btn-build';
+    anotherTweak.style.width = '100%';
     anotherTweak.textContent = 'Request another tweak →';
     anotherTweak.addEventListener('click', (e) => {
       e.target.closest('.build-row')?.remove();
@@ -3332,8 +3338,8 @@ Rules — no exceptions:
       resetConversation();
     });
 
-    row.appendChild(openBtn);
     row.appendChild(copyBtn);
+    row.appendChild(openBtn);
     row.appendChild(anotherTweak);
     row.appendChild(startOver);
 
