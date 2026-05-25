@@ -5,7 +5,19 @@
       "PowerShell(Get-ChildItem C:\\\\Users\\\\hardo\\\\Downloads | Where-Object { $_.PSIsContainer } | Select-Object Name)",
       "Bash(node *)",
       "WebSearch",
-      "Skill(andrej-karpathy-skills:karpathy-guidelines)"
+      "Skill(andrej-karpathy-skills:karpathy-guidelines)",
+      "WebFetch(domain:docs.runwayml.com)",
+      "WebFetch(domain:learn.runwayml.com)",
+      "WebFetch(domain:help.runwayml.com)",
+      "WebFetch(domain:docs.dev.runwayml.com)",
+      "WebFetch(domain:api-docs.runway.team)",
+      "WebFetch(domain:replicate.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl *)",
+      "Bash(grep -oE 'https?://[^\"]*\\\\.\\(json|yaml|yml\\)' C:\\\\\\\\Users\\\\\\\\hardo\\\\\\\\nerlo-config\\\\\\\\nerlo-runway-docs.html)",
+      "Bash(grep -oE 'openapi[^\"]{0,200}' \"C:/Users/hardo/nerlo-config/nerlo-runway-docs.html\")",
+      "Bash(grep -oE '/v1/text_to_video[^/]{0,15000}' \"C:/Users/hardo/nerlo-config/nerlo-runway-docs.html\")"
     ]
   }
 }
