@@ -1060,6 +1060,24 @@ Keep the final prompt under 800 characters. Be specific and descriptive but conc
 
   const SYSTEM_VIDEO_TWEAK = `You receive a Runway video prompt and a tweak request. Produce a revised version of the full prompt that applies the change. The prompt the user already has: {{PROMPT}}. Output the complete revised prompt only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions. Keep it under 200 words.`;
 
+  const SYSTEM_ROUTER = `You are nerlo's routing layer. A user has typed a free-form message describing what they want to create or accomplish. Your job is to classify their intent and route them to the correct vertical.
+
+The six verticals are:
+- app: building an app, website, tool, platform, software, anything with users or a database
+- image: generating an image, photo, logo, illustration, artwork, visual, design asset
+- audio: creating music, a song, sound effects, a voiceover, narration, podcast audio, a jingle
+- video: creating a video, clip, reel, animation, TikTok, short film, footage
+- automation: automating a task or workflow, connecting apps, triggers, "when this happens do that", recurring tasks
+- writing: writing a blog post, email, article, caption, description, copy, script, content
+
+If the intent is clear, respond with ONLY this JSON — no text before or after:
+{"route":"<vertical>","confidence":"high"}
+
+If the intent is ambiguous and could belong to two or more verticals, respond with ONLY this JSON — no text before or after:
+{"route":"ambiguous","question":"<one short clarifying question in nerlo's voice — no filler, no exclamation, plain and direct>","options":["<vertical1>","<vertical2>"]}
+
+Never route to more than one vertical. Never ask more than one clarifying question. Never mention the verticals by name to the user. Never explain your reasoning.`;
+
   const SYSTEM_AUTOMATION = `You are nerlo — helping someone automate a repetitive task they currently do manually. Your job is to understand exactly what they want to automate and translate it into a structured brief any automation tool can follow. Talk like a smart friend who genuinely wants to understand what they are trying to do. Never mention you are collecting information. Never compliment the idea. Never express excitement. Get straight to the point.
 
 LANGUAGE RULES — NO EXCEPTIONS:
@@ -1248,6 +1266,11 @@ Rules — no exceptions:
   let writingTweakMode = false;
   let writingTweakCount = 0;
 
+  let routerMode = true;
+  let pendingRouterOriginalMessage = null;
+  let pendingRouterOptions = null;
+  let pendingRouterAudioMessage = null;
+
   const IMAGE_TOOL_URLS = {
     midjourney: 'https://www.midjourney.com',
     flux: 'https://fal.ai/models/fal-ai/flux/dev',
@@ -1363,72 +1386,9 @@ Rules — no exceptions:
       scrollToBottom();
 
       setTimeout(() => {
-        const card = document.createElement('div');
-        card.className = 'welcome-grid';
-        card.style.cssText = 'opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
-
-        const appBtn = document.createElement('button');
-        appBtn.className = 'btn btn-primary';
-        appBtn.textContent = 'Build an app';
-        appBtn.style.cssText = 'text-align:left;height:100%;';
-        appBtn.addEventListener('click', () => {
-          card.remove();
-          selectMode('app');
-        });
-
-        const imgBtn = document.createElement('button');
-        imgBtn.className = 'btn btn-primary';
-        imgBtn.textContent = 'Generate an image';
-        imgBtn.style.cssText = 'text-align:left;height:100%;';
-        imgBtn.addEventListener('click', () => {
-          card.remove();
-          selectMode('image');
-        });
-
-        const audioBtn = document.createElement('button');
-        audioBtn.className = 'btn btn-primary';
-        audioBtn.textContent = 'Make music or audio';
-        audioBtn.style.cssText = 'text-align:left;height:100%;';
-        audioBtn.addEventListener('click', () => {
-          card.remove();
-          selectMode('audio');
-        });
-
-        const videoBtn = document.createElement('button');
-        videoBtn.className = 'btn btn-primary';
-        videoBtn.textContent = 'Create a video';
-        videoBtn.style.cssText = 'text-align:left;height:100%;';
-        videoBtn.addEventListener('click', () => {
-          card.remove();
-          selectMode('video');
-        });
-
-        const automationBtn = document.createElement('button');
-        automationBtn.className = 'btn btn-primary';
-        automationBtn.textContent = 'Automate a task';
-        automationBtn.style.cssText = 'text-align:left;height:100%;';
-        automationBtn.addEventListener('click', () => {
-          card.remove();
-          selectMode('automation');
-        });
-
-        const writingBtn = document.createElement('button');
-        writingBtn.className = 'btn btn-primary';
-        writingBtn.textContent = 'Write something';
-        writingBtn.style.cssText = 'text-align:left;height:100%;';
-        writingBtn.addEventListener('click', () => {
-          card.remove();
-          selectMode('writing');
-        });
-
-        card.appendChild(appBtn);
-        card.appendChild(imgBtn);
-        card.appendChild(audioBtn);
-        card.appendChild(videoBtn);
-        card.appendChild(automationBtn);
-        card.appendChild(writingBtn);
-        innerEl.appendChild(card);
-        scrollToBottom();
+        inputEl.placeholder = 'what do you want to create?';
+        inputArea.style.display = '';
+        setInputEnabled(true);
       }, 400);
     }, 350);
   }
@@ -1544,6 +1504,108 @@ Rules — no exceptions:
     }, 350);
   }
 
+  function findMatchingVertical(answer, options) {
+    const lower = answer.toLowerCase();
+    const keywords = {
+      app: ['app', 'website', 'site', 'tool', 'platform', 'software', 'build', 'application', 'database', 'users'],
+      image: ['image', 'photo', 'picture', 'visual', 'logo', 'illustration', 'artwork', 'design', 'graphic'],
+      audio: ['music', 'song', 'audio', 'sound', 'voiceover', 'narration', 'podcast', 'jingle', 'voice'],
+      video: ['video', 'clip', 'reel', 'animation', 'film', 'footage', 'tiktok', 'short'],
+      automation: ['automate', 'automation', 'workflow', 'trigger', 'recurring', 'zap', 'connect'],
+      writing: ['write', 'writing', 'blog', 'email', 'article', 'caption', 'copy', 'script', 'content', 'post']
+    };
+    const candidates = (options && options.length) ? options : Object.keys(keywords);
+    let best = null;
+    let bestScore = 0;
+    for (const opt of candidates) {
+      let score = 0;
+      if (lower.includes(opt)) score += 5;
+      const kws = keywords[opt] || [];
+      for (const kw of kws) {
+        if (lower.includes(kw)) score += 1;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = opt;
+      }
+    }
+    return best || candidates[0];
+  }
+
+  async function routeToVertical(originalMessage, vertical) {
+    routerMode = false;
+
+    if (vertical === 'audio') {
+      currentMode = 'audio';
+      conversationHistory = [];
+      pendingRouterAudioMessage = originalMessage;
+      setTimeout(() => {
+        addBubble('nerlo', 'What kind of audio are you looking to create?');
+        setTimeout(() => {
+          const card = document.createElement('div');
+          card.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;align-self:flex-start;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
+
+          const musicBtn = document.createElement('button');
+          musicBtn.className = 'btn btn-primary';
+          musicBtn.textContent = 'Music or a song';
+          musicBtn.style.cssText = 'text-align:left;';
+          musicBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('music'); });
+
+          const sfxBtn = document.createElement('button');
+          sfxBtn.className = 'btn btn-primary';
+          sfxBtn.textContent = 'A sound effect';
+          sfxBtn.style.cssText = 'text-align:left;';
+          sfxBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('sfx'); });
+
+          const voiceBtn = document.createElement('button');
+          voiceBtn.className = 'btn btn-primary';
+          voiceBtn.textContent = 'A voiceover or narration';
+          voiceBtn.style.cssText = 'text-align:left;';
+          voiceBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('voice'); });
+
+          card.appendChild(musicBtn);
+          card.appendChild(sfxBtn);
+          card.appendChild(voiceBtn);
+          innerEl.appendChild(card);
+          scrollToBottom();
+        }, 400);
+      }, 350);
+      return;
+    }
+
+    currentMode = vertical;
+    conversationHistory = [{ role: 'user', content: originalMessage }];
+
+    let systemPrompt;
+    if (vertical === 'app') {
+      inputEl.placeholder = 'tell me what you want to build...';
+      systemPrompt = buildSystemPrompt();
+      marketChecked = true;
+    } else if (vertical === 'image') {
+      inputEl.placeholder = 'describe what you want to see...';
+      systemPrompt = SYSTEM_IMAGE_GEN;
+    } else if (vertical === 'video') {
+      inputEl.placeholder = 'describe what you want to see...';
+      systemPrompt = SYSTEM_VIDEO;
+    } else if (vertical === 'automation') {
+      inputEl.placeholder = 'describe what you want to automate...';
+      systemPrompt = SYSTEM_AUTOMATION;
+    } else if (vertical === 'writing') {
+      inputEl.placeholder = 'tell me what you want to write...';
+      systemPrompt = SYSTEM_WRITING;
+    } else {
+      inputEl.placeholder = 'tell me what you want to build...';
+      systemPrompt = buildSystemPrompt();
+      currentMode = 'app';
+      marketChecked = true;
+    }
+
+    inputArea.style.display = '';
+    showTyping();
+    const data = await callAPI(systemPrompt, [{ role: 'user', content: originalMessage }]);
+    await deliverAssistantResponse(data);
+  }
+
   function trackEvent(event) {
     fetch('/api/usage', {
       method: 'POST',
@@ -1584,6 +1646,10 @@ Rules — no exceptions:
     writingPayload = null;
     writingTweakMode = false;
     writingTweakCount = 0;
+    routerMode = true;
+    pendingRouterOriginalMessage = null;
+    pendingRouterOptions = null;
+    pendingRouterAudioMessage = null;
     inputEl.placeholder = 'tell me what you want to build...';
     renderWelcome();
   }
@@ -3926,6 +3992,53 @@ Rules — no exceptions:
       return;
     }
 
+    if (routerMode && currentMode === null) {
+      addBubble('user', text);
+      setInputEnabled(false);
+
+      if (pendingRouterOriginalMessage) {
+        const detected = findMatchingVertical(text, pendingRouterOptions);
+        const original = pendingRouterOriginalMessage;
+        pendingRouterOriginalMessage = null;
+        pendingRouterOptions = null;
+        await routeToVertical(original + ' ' + text, detected);
+        return;
+      }
+
+      conversationHistory.push({ role: 'user', content: text });
+      showTyping();
+
+      try {
+        const data = await callAPI(SYSTEM_ROUTER, [{ role: 'user', content: text }]);
+        hideTyping();
+        if (!data || data.error || !data.content?.[0]) throw new Error('no response');
+        const responseText = (data.content[0].text || '').trim();
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('no json');
+        const parsed = JSON.parse(jsonMatch[0]);
+
+        if (parsed.route === 'ambiguous') {
+          pendingRouterOriginalMessage = text;
+          pendingRouterOptions = parsed.options || [];
+          addBubble('nerlo', parsed.question || 'Could you tell me a bit more about what you want to create?');
+          setInputEnabled(true);
+          return;
+        }
+
+        if (parsed.confidence === 'high' && parsed.route) {
+          await routeToVertical(text, parsed.route);
+          return;
+        }
+
+        throw new Error('unhandled router response');
+      } catch {
+        hideTyping();
+        addBubble('nerlo', "I want to make sure I get this right — are you looking to build an app, create something visual, write something, make audio, create a video, or automate a task?");
+        setInputEnabled(true);
+      }
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
@@ -3940,6 +4053,14 @@ Rules — no exceptions:
     }
 
     if (currentMode === 'audio') {
+      if (pendingRouterAudioMessage) {
+        const lastIdx = conversationHistory.length - 1;
+        conversationHistory[lastIdx] = {
+          role: 'user',
+          content: pendingRouterAudioMessage + ' ' + conversationHistory[lastIdx].content
+        };
+        pendingRouterAudioMessage = null;
+      }
       const systemPrompt = audioSubMode === 'sfx' ? SYSTEM_SFX : audioSubMode === 'voice' ? SYSTEM_VOICE : SYSTEM_AUDIO;
       const intakeData = await callAPI(systemPrompt, conversationHistory.map(m => ({ role: m.role, content: m.content })));
       await deliverAssistantResponse(intakeData);
