@@ -1381,7 +1381,7 @@ Rules — no exceptions:
     setTimeout(() => {
       const el = document.createElement('div');
       el.className = 'bubble nerlo';
-      el.textContent = "What are you creating today?";
+      el.textContent = "What do you want to create?";
       innerEl.appendChild(el);
       scrollToBottom();
 
@@ -1404,19 +1404,19 @@ Rules — no exceptions:
           card.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;align-self:flex-start;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
 
           const musicBtn = document.createElement('button');
-          musicBtn.className = 'btn btn-primary';
+          musicBtn.className = 'btn-build';
           musicBtn.textContent = 'Music or a song';
           musicBtn.style.cssText = 'text-align:left;';
           musicBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('music'); });
 
           const sfxBtn = document.createElement('button');
-          sfxBtn.className = 'btn btn-primary';
+          sfxBtn.className = 'btn-build';
           sfxBtn.textContent = 'A sound effect';
           sfxBtn.style.cssText = 'text-align:left;';
           sfxBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('sfx'); });
 
           const voiceBtn = document.createElement('button');
-          voiceBtn.className = 'btn btn-primary';
+          voiceBtn.className = 'btn-build';
           voiceBtn.textContent = 'A voiceover or narration';
           voiceBtn.style.cssText = 'text-align:left;';
           voiceBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('voice'); });
@@ -1546,19 +1546,19 @@ Rules — no exceptions:
           card.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;align-self:flex-start;max-width:86%;opacity:0;animation:bubbleIn 0.3s ease 0.2s forwards;';
 
           const musicBtn = document.createElement('button');
-          musicBtn.className = 'btn btn-primary';
+          musicBtn.className = 'btn-build';
           musicBtn.textContent = 'Music or a song';
           musicBtn.style.cssText = 'text-align:left;';
           musicBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('music'); });
 
           const sfxBtn = document.createElement('button');
-          sfxBtn.className = 'btn btn-primary';
+          sfxBtn.className = 'btn-build';
           sfxBtn.textContent = 'A sound effect';
           sfxBtn.style.cssText = 'text-align:left;';
           sfxBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('sfx'); });
 
           const voiceBtn = document.createElement('button');
-          voiceBtn.className = 'btn btn-primary';
+          voiceBtn.className = 'btn-build';
           voiceBtn.textContent = 'A voiceover or narration';
           voiceBtn.style.cssText = 'text-align:left;';
           voiceBtn.addEventListener('click', () => { card.remove(); selectAudioSubMode('voice'); });
