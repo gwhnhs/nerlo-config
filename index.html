@@ -2076,7 +2076,7 @@ Rules — no exceptions:
     const toolLabel = IMAGE_TOOL_LABELS[payload.tool] || payload.tool;
     const toolUrl = IMAGE_TOOL_URLS[payload.tool] || 'https://www.midjourney.com';
 
-    addBubble('nerlo', 'Your prompt is ready. Based on what you are creating, ' + toolLabel + ' is ' + payload.reason + ' Copy the prompt and paste it in.');
+    addBubble('nerlo', 'Your prompt is ready. Based on what you are creating, ' + toolLabel + ' is ' + payload.reason + ' Copy the prompt and paste it in.' + (payload.tool === 'flux' ? ' Flux doesn\'t offer a free tier — you\'ll need to create and fund a fal.ai account at fal.ai. Generation costs a few cents per image.' : ''));
 
     if (payload.tool === 'midjourney') {
       setTimeout(() => {
@@ -3120,7 +3120,7 @@ Rules — no exceptions:
   function revealVideoPrompt(payload) {
     videoPayload = payload;
 
-    addBubble('nerlo', 'Your prompt is ready. Based on what you want to create, Runway is ' + payload.reason + ' One click and we generate it here.');
+    addBubble('nerlo', 'Your prompt is ready. Based on what you want to create, Runway is ' + payload.reason + ' One click and we generate it here. Runway doesn\'t offer a free tier — you\'ll need to create and fund a developer account at dev.runwayml.com. A 5-second clip costs around $0.25.');
 
     setTimeout(() => {
       const card = document.createElement('div');
