@@ -1133,6 +1133,65 @@ Access requirements, any data formatting needed between steps, and a note that i
 
   const SYSTEM_AUTOMATION_TWEAK = `You receive an automation brief and a tweak request. Produce a revised version of the full brief that applies the change. The brief the user already has: {{BRIEF}}. Output the complete revised brief only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions. Preserve all five section headings.`;
 
+  const SYSTEM_WRITING = `You are nerlo — helping someone get a precise writing prompt they can paste into an AI writing tool. Your job is to understand exactly what they want written and translate it into a prompt that gets the result they actually need. Talk like a smart friend. Never mention you are collecting information. Never compliment the idea. Never express excitement. Get straight to the point.
+
+LANGUAGE RULES — NO EXCEPTIONS:
+Never use "like" as a filler, connector, or example introducer. Replace with "such as", "for example", or "for instance".
+Every response must open with a question or directly lead into one. Never open with a declarative statement about what the user said.
+Never use markdown formatting — no asterisks, bullets, bold, headers, or lists. Plain conversational prose only.
+
+CONTENT RULES:
+
+1. NEVER ASK WHAT YOU ALREADY KNOW.
+Extract everything already answered from the user's messages before asking anything. Only ask about what is genuinely missing.
+
+2. NEVER REPEAT A QUESTION.
+Before forming any question, scan every prior message. If a topic is answered in any form, it is closed.
+
+3. NEVER INVENT DETAILS.
+Only include in the final prompt what the user explicitly stated or confirmed.
+
+4. ONE QUESTION AT A TIME.
+Every question must change the output.
+
+5. HARD CEILING OF 8 QUESTIONS.
+The eight topics nerlo must cover are:
+- What they are writing and what it is for
+- Who the audience is
+- Tone and voice
+- Length or format
+- Specific points, details, or facts to include
+- What they want the reader to feel or do after reading
+- Any words, phrases, or style elements to avoid
+- A reference — something with the right feel
+
+Track which topics are answered. When all relevant topics are covered or additional questions would not change the output, generate the prompt immediately. Hard ceiling: never ask more than 8 questions. The ceiling is a maximum, not a target.
+
+TOOL SELECTION — INTERNAL, NEVER MENTIONED:
+Select one tool based on the conversation. Never name the tool during intake.
+Select Claude when: professional writing, structured documents, nuanced tone, business content, careful judgment or precise language required.
+Select ChatGPT when: creative writing, storytelling, casual tone, blog posts, social content, general use. Default for Regular Joe.
+
+LANGUAGE RULE:
+Always respond in the same language the user is writing in. The final JSON payload always stays in English.
+
+OUTPUT — WHEN READY:
+Respond with ONLY this — no text before or after:
+NERLO_WRITING_PROMPT_READY
+{"tool":"chatgpt","prompt":"<prompt string>","reason":"<reason string>"}
+
+tool must be exactly one of: chatgpt, claude
+
+Reason strings — use exactly:
+chatgpt: "the right fit here — it handles this type of writing well and responds naturally to a precise prompt."
+claude: "the right fit here — it excels at nuanced, structured writing and will follow a detailed prompt with precision."
+
+Prompt format — plain prose, no markdown, no ALL CAPS headings. Written as a direct instruction to an AI writing tool. Structure the prompt in this order:
+
+Act as [role and expertise relevant to the writing task]. Write [what, format, length]. The audience is [who they are and what they care about]. Tone should be [voice, style, energy]. Include [specific points, details, or facts]. The goal is to make the reader [feel or do something]. Avoid [style elements, words, or phrases to exclude]. [Reference or inspiration if provided].`;
+
+  const SYSTEM_WRITING_TWEAK = `You receive a writing prompt and a tweak request. Produce a revised version of the full prompt that applies the change. The prompt the user already has: {{PROMPT}}. Output the complete revised prompt only. No preamble, no explanation, no markdown. Apply only the change requested. Never ask follow-up questions.`;
+
   const SYSTEM_EDIT = `You read a product brief and a change request, then produce a single Lovable prompt that applies the change.
 
 The brief the user already built:
@@ -1185,6 +1244,10 @@ Rules — no exceptions:
   let automationTweakMode = false;
   let automationTweakCount = 0;
 
+  let writingPayload = null;
+  let writingTweakMode = false;
+  let writingTweakCount = 0;
+
   const IMAGE_TOOL_URLS = {
     midjourney: 'https://www.midjourney.com',
     flux: 'https://fal.ai/models/fal-ai/flux/dev',
@@ -1228,6 +1291,16 @@ Rules — no exceptions:
     zapier: 'Zapier',
     make: 'Make',
     n8n: 'n8n'
+  };
+
+  const WRITING_TOOL_URLS = {
+    chatgpt: 'https://chatgpt.com/',
+    claude: 'https://claude.ai/new'
+  };
+
+  const WRITING_TOOL_LABELS = {
+    chatgpt: 'ChatGPT',
+    claude: 'Claude'
   };
 
   // DOM
@@ -1339,11 +1412,21 @@ Rules — no exceptions:
           selectMode('automation');
         });
 
+        const writingBtn = document.createElement('button');
+        writingBtn.className = 'btn btn-primary';
+        writingBtn.textContent = 'Write something';
+        writingBtn.style.cssText = 'text-align:left;height:100%;';
+        writingBtn.addEventListener('click', () => {
+          card.remove();
+          selectMode('writing');
+        });
+
         card.appendChild(appBtn);
         card.appendChild(imgBtn);
         card.appendChild(audioBtn);
         card.appendChild(videoBtn);
         card.appendChild(automationBtn);
+        card.appendChild(writingBtn);
         innerEl.appendChild(card);
         scrollToBottom();
       }, 400);
@@ -1405,6 +1488,17 @@ Rules — no exceptions:
       inputArea.style.display = '';
       setTimeout(() => {
         addBubble('nerlo', "Tell me what you want to automate. Don't worry about the technical side — that's what I'm here for.");
+        setInputEnabled(true);
+      }, 350);
+      return;
+    }
+    if (mode === 'writing') {
+      currentMode = 'writing';
+      inputEl.placeholder = 'tell me what you want to write...';
+      addBubble('user', 'write something');
+      inputArea.style.display = '';
+      setTimeout(() => {
+        addBubble('nerlo', "Tell me what you want to write. Don't worry about how to phrase it — that's what I'm here for.");
         setInputEnabled(true);
       }, 350);
       return;
@@ -1487,6 +1581,9 @@ Rules — no exceptions:
     automationPayload = null;
     automationTweakMode = false;
     automationTweakCount = 0;
+    writingPayload = null;
+    writingTweakMode = false;
+    writingTweakCount = 0;
     inputEl.placeholder = 'tell me what you want to build...';
     renderWelcome();
   }
@@ -1708,6 +1805,15 @@ Rules — no exceptions:
     if (!text.includes('NERLO_AUTOMATION_BRIEF_READY')) return null;
     try {
       const m = text.match(/NERLO_AUTOMATION_BRIEF_READY\s*(\{[\s\S]*\})/);
+      if (!m) return null;
+      return JSON.parse(m[1]);
+    } catch { return null; }
+  }
+
+  function tryParseWritingPrompt(text) {
+    if (!text.includes('NERLO_WRITING_PROMPT_READY')) return null;
+    try {
+      const m = text.match(/NERLO_WRITING_PROMPT_READY\s*(\{[\s\S]*\})/);
       if (!m) return null;
       return JSON.parse(m[1]);
     } catch { return null; }
@@ -3378,6 +3484,201 @@ Rules — no exceptions:
     scrollToBottom();
   }
 
+  function buildWritingToolUrl(tool, prompt) {
+    const base = WRITING_TOOL_URLS[tool] || WRITING_TOOL_URLS.chatgpt;
+    return base + '?q=' + encodeURIComponent(prompt);
+  }
+
+  function revealWritingPrompt(payload) {
+    writingPayload = payload;
+    const toolLabel = WRITING_TOOL_LABELS[payload.tool] || payload.tool;
+
+    addBubble('nerlo', 'Your writing prompt is ready. Based on what you want to write, ' + toolLabel + ' is ' + payload.reason + ' One click and your prompt is loaded — just hit send.');
+
+    setTimeout(() => {
+      const card = document.createElement('div');
+      card.className = 'brief-card';
+
+      const header = document.createElement('div');
+      header.className = 'brief-card-header';
+
+      const label = document.createElement('span');
+      label.className = 'brief-card-label';
+      label.textContent = 'your prompt';
+      header.appendChild(label);
+      card.appendChild(header);
+
+      const body = document.createElement('div');
+      body.className = 'brief-section-body';
+      body.textContent = payload.prompt;
+      card.appendChild(body);
+
+      innerEl.appendChild(card);
+      scrollToBottom();
+      trackEvent('writing');
+    }, 500);
+
+    setTimeout(() => {
+      const row = document.createElement('div');
+      row.className = 'build-row';
+
+      const openBtn = document.createElement('button');
+      openBtn.className = 'btn-build';
+      openBtn.style.width = '100%';
+      openBtn.textContent = 'Open ' + toolLabel + ' with prompt →';
+      openBtn.addEventListener('click', () => {
+        window.open(buildWritingToolUrl(writingPayload.tool, writingPayload.prompt), '_blank');
+      });
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-build';
+      copyBtn.style.width = '100%';
+      copyBtn.textContent = 'Copy prompt →';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(writingPayload.prompt).then(() => {
+          copyBtn.textContent = 'copied ✓';
+          setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+        });
+      });
+
+      const tweakBtn = document.createElement('button');
+      tweakBtn.className = 'btn-build';
+      tweakBtn.style.width = '100%';
+      tweakBtn.textContent = 'Request a tweak →';
+      tweakBtn.addEventListener('click', (e) => {
+        e.target.closest('.build-row')?.remove();
+        enterWritingTweakMode();
+      });
+
+      const startOver = document.createElement('a');
+      startOver.className = 'build-start-over';
+      startOver.textContent = 'start over with a new idea';
+      startOver.href = '#';
+      startOver.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetConversation();
+      });
+
+      row.appendChild(openBtn);
+      row.appendChild(copyBtn);
+      row.appendChild(tweakBtn);
+      row.appendChild(startOver);
+      innerEl.appendChild(row);
+      scrollToBottom();
+    }, 1000);
+  }
+
+  function enterWritingTweakMode() {
+    writingTweakMode = true;
+    inputEl.placeholder = 'what would you like to change?';
+    inputArea.style.display = '';
+    setInputEnabled(true);
+  }
+
+  async function sendWritingTweakMessage(text) {
+    addBubble('user', text);
+    setInputEnabled(false);
+    showTyping();
+
+    const sys = SYSTEM_WRITING_TWEAK.replace('{{PROMPT}}', () => writingPayload.prompt);
+
+    const data = await callAPI(sys, [{ role: 'user', content: text }]);
+    hideTyping();
+
+    if (!data || data.error || !data.content?.[0]) {
+      addBubble('nerlo', 'something went wrong. try again?');
+      setInputEnabled(true);
+      return;
+    }
+
+    const revised = (data.content[0].text || '').trim();
+    writingTweakCount++;
+    writingTweakMode = false;
+    inputArea.style.display = 'none';
+    writingPayload = { ...writingPayload, prompt: revised };
+    showWritingTweakResult(revised);
+  }
+
+  function showWritingTweakResult(revised) {
+    const toolLabel = WRITING_TOOL_LABELS[writingPayload.tool] || writingPayload.tool;
+
+    const card = document.createElement('div');
+    card.className = 'brief-card';
+
+    const header = document.createElement('div');
+    header.className = 'brief-card-header';
+    const label = document.createElement('span');
+    label.className = 'brief-card-label';
+    label.textContent = 'revised prompt';
+    header.appendChild(label);
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'brief-section-body';
+    body.textContent = revised;
+    card.appendChild(body);
+
+    innerEl.appendChild(card);
+
+    const row = document.createElement('div');
+    row.className = 'build-row';
+
+    const openBtn = document.createElement('button');
+    openBtn.className = 'btn-build';
+    openBtn.style.width = '100%';
+    openBtn.textContent = 'Open ' + toolLabel + ' with prompt →';
+    openBtn.addEventListener('click', () => {
+      window.open(buildWritingToolUrl(writingPayload.tool, writingPayload.prompt), '_blank');
+    });
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'btn-build';
+    copyBtn.style.width = '100%';
+    copyBtn.textContent = 'Copy prompt →';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(revised).then(() => {
+        copyBtn.textContent = 'copied ✓';
+        setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+      });
+    });
+
+    const anotherTweak = document.createElement('button');
+    anotherTweak.className = 'btn-build';
+    anotherTweak.style.width = '100%';
+    anotherTweak.textContent = 'Request another tweak →';
+    anotherTweak.addEventListener('click', (e) => {
+      e.target.closest('.build-row')?.remove();
+      enterWritingTweakMode();
+    });
+
+    const startOver = document.createElement('a');
+    startOver.className = 'build-start-over';
+    startOver.textContent = 'start over with a new idea';
+    startOver.href = '#';
+    startOver.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetConversation();
+    });
+
+    row.appendChild(openBtn);
+    row.appendChild(copyBtn);
+    row.appendChild(anotherTweak);
+    row.appendChild(startOver);
+
+    if (writingTweakCount >= 3) {
+      const warning = document.createElement('div');
+      warning.className = 'build-start-over';
+      warning.style.maxWidth = '420px';
+      warning.style.textAlign = 'center';
+      warning.style.lineHeight = '1.5';
+      warning.textContent = "heads up — you've made a few tweaks. starting fresh with an updated description can produce better results.";
+      row.appendChild(warning);
+    }
+
+    innerEl.appendChild(row);
+    scrollToBottom();
+  }
+
   function enterEditMode() {
     editMode = true;
     inputEl.placeholder = 'what would you like to change?';
@@ -3564,6 +3865,13 @@ Rules — no exceptions:
       revealAutomationBrief(automationBrief);
       return;
     }
+    const writingPrompt = tryParseWritingPrompt(text);
+    if (writingPrompt) {
+      conversationHistory.push({ role: 'assistant', content: text });
+      inputArea.style.display = 'none';
+      revealWritingPrompt(writingPrompt);
+      return;
+    }
     addBubble('nerlo', text);
     conversationHistory.push({ role: 'assistant', content: text });
     extractTopic();
@@ -3573,7 +3881,7 @@ Rules — no exceptions:
   // Main send flow
   async function sendMessage() {
     const text = inputEl.value.trim();
-    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode) || (sfxPayload && !sfxTweakMode) || (voicePayload && !voiceTweakMode) || (videoPayload && !videoTweakMode) || (automationPayload && !automationTweakMode)) return;
+    if (!text || isTyping || (briefContent && !editMode) || (imagePayload && !imageTweakMode) || (audioPayload && !audioTweakMode) || (sfxPayload && !sfxTweakMode) || (voicePayload && !voiceTweakMode) || (videoPayload && !videoTweakMode) || (automationPayload && !automationTweakMode) || (writingPayload && !writingTweakMode)) return;
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
@@ -3613,6 +3921,11 @@ Rules — no exceptions:
       return;
     }
 
+    if (writingTweakMode) {
+      await sendWritingTweakMessage(text);
+      return;
+    }
+
     addBubble('user', text);
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
@@ -3641,6 +3954,12 @@ Rules — no exceptions:
 
     if (currentMode === 'automation') {
       const intakeData = await callAPI(SYSTEM_AUTOMATION, conversationHistory.map(m => ({ role: m.role, content: m.content })));
+      await deliverAssistantResponse(intakeData);
+      return;
+    }
+
+    if (currentMode === 'writing') {
+      const intakeData = await callAPI(SYSTEM_WRITING, conversationHistory.map(m => ({ role: m.role, content: m.content })));
       await deliverAssistantResponse(intakeData);
       return;
     }
