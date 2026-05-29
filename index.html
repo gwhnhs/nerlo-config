@@ -3858,7 +3858,9 @@ Rules — no exceptions:
     }
     addBubble('nerlo', text);
     conversationHistory.push({ role: 'assistant', content: text });
-    extractTopic();
+    if (currentMode === 'app' || currentMode === 'image') {
+      extractTopic();
+    }
     setInputEnabled(true);
   }
 
