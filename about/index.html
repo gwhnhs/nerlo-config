@@ -149,20 +149,11 @@
       line-height: 1.65;
     }
 
-    .vertical-screenshot {
-      width: 100%;
-      height: 180px;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 300;
-      color: var(--text-dim);
-      letter-spacing: 0.04em;
+    /* ── GIF ── */
+    .gif-container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 1.5rem 5rem;
     }
 
     /* ── How it works ── */
@@ -243,6 +234,12 @@
   <p class="hero-sub">nerlo is the translation layer between what you want to create and the AI tools that build it. describe what you want. nerlo asks the right questions. you get a prompt or brief ready to use.</p>
 </section>
 
+<!-- GIF -->
+<section class="gif-container">
+  <!-- replace this div with <img src="/nerlo-demo.gif" ... /> when GIF is ready -->
+  <div style="width:100%;aspect-ratio:16/9;background:var(--surface);border:1px solid var(--border-strong);border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:0.8rem;font-weight:300;color:var(--text-dim);letter-spacing:0.04em;">--nerlo in action--</div>
+</section>
+
 <!-- Verticals -->
 <section class="verticals">
   <p class="section-label">what nerlo can do</p>
@@ -252,7 +249,6 @@
       <span class="vertical-name">app building</span>
       <span class="vertical-desc">describe your app idea in plain language. nerlo turns it into a senior-engineer brief any AI builder can work from.</span>
     </div>
-    <div class="vertical-screenshot">--screenshot--</div>
   </div>
 
   <div class="vertical-row">
@@ -260,7 +256,6 @@
       <span class="vertical-name">image generation</span>
       <span class="vertical-desc">describe what you want to see. nerlo translates it into a precise prompt for Midjourney, Flux, or Firefly — and generates it directly for Flux.</span>
     </div>
-    <div class="vertical-screenshot">--screenshot--</div>
   </div>
 
   <div class="vertical-row">
@@ -268,7 +263,6 @@
       <span class="vertical-name">audio</span>
       <span class="vertical-desc">describe the music, sound effect, or voiceover you need. nerlo produces a ready-to-use prompt for Suno or ElevenLabs — and generates directly for ElevenLabs.</span>
     </div>
-    <div class="vertical-screenshot">--screenshot--</div>
   </div>
 
   <div class="vertical-row">
@@ -276,7 +270,6 @@
       <span class="vertical-name">video</span>
       <span class="vertical-desc">describe the scene. nerlo builds a cinematic prompt and generates your clip directly via Runway Gen-4.5.</span>
     </div>
-    <div class="vertical-screenshot">--screenshot--</div>
   </div>
 
   <div class="vertical-row">
@@ -284,7 +277,6 @@
       <span class="vertical-name">automation</span>
       <span class="vertical-desc">describe what you want to automate. nerlo extracts the workflow logic and produces a step-by-step brief for Zapier, Make, or n8n.</span>
     </div>
-    <div class="vertical-screenshot">--screenshot--</div>
   </div>
 
   <div class="vertical-row">
@@ -292,7 +284,6 @@
       <span class="vertical-name">writing</span>
       <span class="vertical-desc">describe what you want to write. nerlo crafts a precise prompt and loads it directly into ChatGPT or Claude — one click and you're ready to send.</span>
     </div>
-    <div class="vertical-screenshot">--screenshot--</div>
   </div>
 </section>
 
