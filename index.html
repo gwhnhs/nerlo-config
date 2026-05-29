@@ -231,70 +231,6 @@
     }
     .note a:hover { color: var(--cream); }
 
-    /* Cards (market + services) */
-    .card {
-      align-self: stretch;
-      background: var(--surface);
-      border: 1px solid var(--star);
-      border-radius: 14px;
-      padding: 1.15rem 1.25rem;
-      opacity: 0;
-      animation: bubbleIn 0.35s ease forwards;
-    }
-    .card-label {
-      font-size: 0.62rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--star);
-      margin-bottom: 0.6rem;
-    }
-    .card-title {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--cream);
-      letter-spacing: -0.01em;
-      margin-bottom: 0.5rem;
-    }
-    .card-body {
-      font-size: 0.88rem;
-      color: var(--cream-dim);
-      line-height: 1.6;
-    }
-    .card-list {
-      list-style: none;
-      margin: 0.6rem 0 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .card-list li {
-      font-size: 0.83rem;
-      color: var(--text);
-      padding: 0.45rem 0.65rem;
-      background: rgba(138,171,220,0.05);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-    .card-list li .item-name {
-      color: var(--star);
-      font-weight: 500;
-      margin-right: 0.4rem;
-    }
-    .card-list li .item-why {
-      color: var(--cream-dim);
-      font-size: 0.78rem;
-      display: block;
-      margin-top: 0.15rem;
-    }
-    .card-actions {
-      margin-top: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
     .btn {
       font-family: 'DM Sans', sans-serif;
       font-size: 0.83rem;
@@ -1225,12 +1161,9 @@ Rules — no exceptions:
 - Be concise and actionable.
 - Never ask follow-up questions. Produce the prompt in a single response.`;
 
-  const MARKET_SYSTEM = 'You analyze app ideas and assess market saturation. Respond with ONLY valid JSON: {"verdict":"saturated"|"competitive"|"clear","competitors":["Name1","Name2","Name3"]}. saturated = many established players dominating the exact space. competitive = established players exist but room for differentiation. clear = no dominant players or genuinely novel idea. Be accurate — most ideas are competitive, not saturated.';
-
   // State
   let conversationHistory = [];
   let answeredTopics = [];
-  let marketChecked = false;
   let isTyping = false;
   let shownServices = new Set();
   let awaitingServiceConfirmation = false;
@@ -1581,7 +1514,6 @@ Rules — no exceptions:
     if (vertical === 'app') {
       inputEl.placeholder = 'tell me what you want to build...';
       systemPrompt = buildSystemPrompt();
-      marketChecked = true;
     } else if (vertical === 'image') {
       inputEl.placeholder = 'describe what you want to see...';
       systemPrompt = SYSTEM_IMAGE_GEN;
@@ -1598,7 +1530,6 @@ Rules — no exceptions:
       inputEl.placeholder = 'tell me what you want to build...';
       systemPrompt = buildSystemPrompt();
       currentMode = 'app';
-      marketChecked = true;
     }
 
     inputArea.style.display = '';
@@ -1618,7 +1549,6 @@ Rules — no exceptions:
   function resetConversation() {
     conversationHistory = [];
     answeredTopics = [];
-    marketChecked = false;
     shownServices = new Set();
     awaitingServiceConfirmation = false;
     briefContent = null;
@@ -1738,73 +1668,6 @@ Rules — no exceptions:
 
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  // Market card
-  function showMarketCard(verdict, competitors) {
-    return new Promise(resolve => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      const competitorsLine = competitors && competitors.length
-        ? '<div style="margin-top:0.55rem;font-size:0.82rem;color:var(--text);">Established players: ' + competitors.map(escapeHtml).join(' · ') + '</div>'
-        : '';
-      const message = verdict === 'saturated'
-        ? 'This space is crowded. Strong existing players already dominate it.'
-        : 'There are established players here, but there is room for a different angle.';
-      card.innerHTML = `
-        <div class="card-label">heads up</div>
-        <div class="card-title">${escapeHtml(message)}</div>
-        ${competitorsLine}
-        <div class="card-actions">
-          <button class="btn btn-primary" data-act="angle">i have a unique angle</button>
-          <button class="btn btn-primary" data-act="personal">it's for personal use</button>
-          <button class="btn btn-secondary" data-act="reset">let me try a different idea</button>
-        </div>
-      `;
-      innerEl.appendChild(card);
-      scrollToBottom();
-      card.querySelectorAll('button').forEach(b => {
-        b.addEventListener('click', () => {
-          const act = b.getAttribute('data-act');
-          card.remove();
-          resolve(act);
-        });
-      });
-    });
-  }
-
-  // Services confirmation card (first message)
-  function showServicesConfirmation(services) {
-    return new Promise(resolve => {
-      services.forEach(s => shownServices.add(s.name));
-      const card = document.createElement('div');
-      card.className = 'card';
-      const items = services.map(s => `
-        <li>
-          <span class="item-name">${escapeHtml(s.name)}</span>
-          <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" style="color:var(--cream-dim);font-size:0.76rem;">${escapeHtml(s.url.replace(/^https?:\/\//, ''))}</a>
-          <span class="item-why">${escapeHtml(s.why)}</span>
-        </li>
-      `).join('');
-      card.innerHTML = `
-        <div class="card-label">heads up</div>
-        <div class="card-title">Your idea will need a few external accounts.</div>
-        <ul class="card-list">${items}</ul>
-        <div class="card-actions">
-          <button class="btn btn-primary" data-act="continue">keep going</button>
-          <button class="btn btn-secondary" data-act="simplify">simplify idea</button>
-        </div>
-      `;
-      innerEl.appendChild(card);
-      scrollToBottom();
-      card.querySelectorAll('button').forEach(b => {
-        b.addEventListener('click', () => {
-          const act = b.getAttribute('data-act');
-          card.remove();
-          resolve(act);
-        });
-      });
-    });
   }
 
   // Brief detection + display
@@ -3552,6 +3415,7 @@ Rules — no exceptions:
   }
 
   function buildWritingToolUrl(tool, prompt) {
+    if (tool === 'claude') return 'https://claude.ai/new';
     const base = WRITING_TOOL_URLS[tool] || WRITING_TOOL_URLS.chatgpt;
     return base + '?q=' + encodeURIComponent(prompt);
   }
@@ -3560,7 +3424,10 @@ Rules — no exceptions:
     writingPayload = payload;
     const toolLabel = WRITING_TOOL_LABELS[payload.tool] || payload.tool;
 
-    addBubble('nerlo', 'Your writing prompt is ready. Based on what you want to write, ' + toolLabel + ' is ' + payload.reason + ' One click and your prompt is loaded — just hit send.');
+    const introText = payload.tool === 'claude'
+      ? 'Your writing prompt is ready. Based on what you want to write, Claude excels at nuanced, structured writing and will follow a detailed prompt with precision. Copy the prompt, open Claude, and paste it in.'
+      : 'Your writing prompt is ready. Based on what you want to write, ' + toolLabel + ' is ' + payload.reason + ' One click and your prompt is loaded — just hit send.';
+    addBubble('nerlo', introText);
 
     setTimeout(() => {
       const card = document.createElement('div');
@@ -3589,24 +3456,51 @@ Rules — no exceptions:
       const row = document.createElement('div');
       row.className = 'build-row';
 
-      const openBtn = document.createElement('button');
-      openBtn.className = 'btn-build';
-      openBtn.style.width = '100%';
-      openBtn.textContent = 'Open ' + toolLabel + ' with prompt →';
-      openBtn.addEventListener('click', () => {
-        window.open(buildWritingToolUrl(writingPayload.tool, writingPayload.prompt), '_blank');
-      });
-
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'btn-build';
-      copyBtn.style.width = '100%';
-      copyBtn.textContent = 'Copy prompt →';
-      copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(writingPayload.prompt).then(() => {
-          copyBtn.textContent = 'copied ✓';
-          setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+      if (payload.tool === 'claude') {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn-build';
+        copyBtn.style.width = '100%';
+        copyBtn.textContent = 'Copy prompt →';
+        copyBtn.addEventListener('click', () => {
+          navigator.clipboard.writeText(writingPayload.prompt).then(() => {
+            copyBtn.textContent = 'copied ✓';
+            setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+          });
         });
-      });
+
+        const openBtn = document.createElement('button');
+        openBtn.className = 'btn-build';
+        openBtn.style.width = '100%';
+        openBtn.textContent = 'Open Claude →';
+        openBtn.addEventListener('click', () => {
+          window.open('https://claude.ai/new', '_blank');
+        });
+
+        row.appendChild(copyBtn);
+        row.appendChild(openBtn);
+      } else {
+        const openBtn = document.createElement('button');
+        openBtn.className = 'btn-build';
+        openBtn.style.width = '100%';
+        openBtn.textContent = 'Open ' + toolLabel + ' with prompt →';
+        openBtn.addEventListener('click', () => {
+          window.open(buildWritingToolUrl(writingPayload.tool, writingPayload.prompt), '_blank');
+        });
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn-build';
+        copyBtn.style.width = '100%';
+        copyBtn.textContent = 'Copy prompt →';
+        copyBtn.addEventListener('click', () => {
+          navigator.clipboard.writeText(writingPayload.prompt).then(() => {
+            copyBtn.textContent = 'copied ✓';
+            setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+          });
+        });
+
+        row.appendChild(openBtn);
+        row.appendChild(copyBtn);
+      }
 
       const tweakBtn = document.createElement('button');
       tweakBtn.className = 'btn-build';
@@ -3626,8 +3520,6 @@ Rules — no exceptions:
         resetConversation();
       });
 
-      row.appendChild(openBtn);
-      row.appendChild(copyBtn);
       row.appendChild(tweakBtn);
       row.appendChild(startOver);
       innerEl.appendChild(row);
@@ -3690,24 +3582,51 @@ Rules — no exceptions:
     const row = document.createElement('div');
     row.className = 'build-row';
 
-    const openBtn = document.createElement('button');
-    openBtn.className = 'btn-build';
-    openBtn.style.width = '100%';
-    openBtn.textContent = 'Open ' + toolLabel + ' with prompt →';
-    openBtn.addEventListener('click', () => {
-      window.open(buildWritingToolUrl(writingPayload.tool, writingPayload.prompt), '_blank');
-    });
-
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'btn-build';
-    copyBtn.style.width = '100%';
-    copyBtn.textContent = 'Copy prompt →';
-    copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(revised).then(() => {
-        copyBtn.textContent = 'copied ✓';
-        setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+    if (writingPayload.tool === 'claude') {
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-build';
+      copyBtn.style.width = '100%';
+      copyBtn.textContent = 'Copy prompt →';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(revised).then(() => {
+          copyBtn.textContent = 'copied ✓';
+          setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+        });
       });
-    });
+
+      const openBtn = document.createElement('button');
+      openBtn.className = 'btn-build';
+      openBtn.style.width = '100%';
+      openBtn.textContent = 'Open Claude →';
+      openBtn.addEventListener('click', () => {
+        window.open('https://claude.ai/new', '_blank');
+      });
+
+      row.appendChild(copyBtn);
+      row.appendChild(openBtn);
+    } else {
+      const openBtn = document.createElement('button');
+      openBtn.className = 'btn-build';
+      openBtn.style.width = '100%';
+      openBtn.textContent = 'Open ' + toolLabel + ' with prompt →';
+      openBtn.addEventListener('click', () => {
+        window.open(buildWritingToolUrl(writingPayload.tool, writingPayload.prompt), '_blank');
+      });
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn-build';
+      copyBtn.style.width = '100%';
+      copyBtn.textContent = 'Copy prompt →';
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(revised).then(() => {
+          copyBtn.textContent = 'copied ✓';
+          setTimeout(() => { copyBtn.textContent = 'Copy prompt →'; }, 2000);
+        });
+      });
+
+      row.appendChild(openBtn);
+      row.appendChild(copyBtn);
+    }
 
     const anotherTweak = document.createElement('button');
     anotherTweak.className = 'btn-build';
@@ -3727,8 +3646,6 @@ Rules — no exceptions:
       resetConversation();
     });
 
-    row.appendChild(openBtn);
-    row.appendChild(copyBtn);
     row.appendChild(anotherTweak);
     row.appendChild(startOver);
 
@@ -4044,7 +3961,6 @@ Rules — no exceptions:
     conversationHistory.push({ role: 'user', content: text });
     setInputEnabled(false);
 
-    const isFirst = !marketChecked;
     showTyping();
 
     if (currentMode === 'image') {
@@ -4086,47 +4002,7 @@ Rules — no exceptions:
       return;
     }
 
-    if (isFirst) {
-      marketChecked = true;
-      const intakePromise = callAPI(buildSystemPrompt(), conversationHistory.map(m => ({ role: m.role, content: m.content })));
-      const marketPromise = callAPI(MARKET_SYSTEM, [{ role: 'user', content: text }]).catch(() => null);
-
-      const [intakeData, marketData] = await Promise.all([intakePromise, marketPromise]);
-
-      // Market gate
-      let marketVerdict = null;
-      if (marketData && !marketData.error && marketData.content?.[0]) {
-        try {
-          const raw = marketData.content[0].text.trim();
-          const m = raw.match(/\{[\s\S]*\}/);
-          if (m) marketVerdict = JSON.parse(m[0]);
-        } catch {}
-      }
-
-      hideTyping();
-
-      if (marketVerdict && (marketVerdict.verdict === 'saturated' || marketVerdict.verdict === 'competitive')) {
-        const choice = await showMarketCard(marketVerdict.verdict, marketVerdict.competitors || []);
-        if (choice === 'reset') {
-          resetConversation();
-          return;
-        }
-      }
-
-      // Services gate (first message only)
-      const services = detectServicesInMessage(text);
-      if (services.length) {
-        await showServicesConfirmation(services);
-      }
-
-      showTyping();
-      // Tiny pause so the typing indicator registers visually
-      await new Promise(r => setTimeout(r, 250));
-      await deliverAssistantResponse(intakeData);
-      return;
-    }
-
-    // Subsequent message flow
+    // App message flow
     const newServices = detectServicesInMessage(text);
     const intakeData = await callAPI(buildSystemPrompt(), conversationHistory.map(m => ({ role: m.role, content: m.content })));
 
