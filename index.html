@@ -563,7 +563,10 @@
 
 <nav>
   <a href="/" class="nav-logo"><span>ner</span><span>lo</span></a>
-  <a href="/about" style="font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:300;color:var(--cream-dim);text-decoration:none;letter-spacing:0.01em;">about</a>
+  <div style="display:flex;gap:1.5rem;align-items:center;">
+    <a href="/about" style="font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:300;color:var(--cream-dim);text-decoration:none;letter-spacing:0.01em;">about</a>
+    <a id="nav-restart" href="#" style="font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:300;color:var(--cream-dim);text-decoration:none;letter-spacing:0.01em;display:none;" onclick="event.preventDefault();resetConversation();">start over</a>
+  </div>
 </nav>
 
 <main class="chat">
@@ -1582,6 +1585,7 @@ Rules — no exceptions:
     pendingRouterOptions = null;
     pendingRouterAudioMessage = null;
     inputEl.placeholder = 'tell me what you want to build...';
+    document.getElementById('nav-restart').style.display = 'none';
     renderWelcome();
   }
 
@@ -3871,6 +3875,7 @@ Rules — no exceptions:
 
     inputEl.value = '';
     inputEl.style.height = 'auto';
+    document.getElementById('nav-restart').style.display = 'inline';
 
     if (editMode) {
       await sendEditMessage(text);
