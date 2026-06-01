@@ -1885,48 +1885,34 @@ Rules — no exceptions:
 
       const btn = document.createElement('button');
       btn.className = 'btn-build';
+      btn.style.width = '100%';
       btn.textContent = 'build this in ' + primary.name + ' →';
       btn.addEventListener('click', () => {
         const brief = briefContent;
         window.open(primary.url(brief), '_blank');
       });
 
-      const altLink = document.createElement('a');
-      altLink.className = 'build-alt';
+      const altLink = document.createElement('button');
+      altLink.className = 'btn-build';
+      altLink.style.width = '100%';
       altLink.textContent = 'or build in ' + secondary.name + ' →';
-      altLink.href = '#';
-      altLink.addEventListener('click', (e) => {
-        e.preventDefault();
+      altLink.addEventListener('click', () => {
         const brief = briefContent;
         window.open(secondary.url(brief), '_blank');
       });
 
-      const requestEdit = document.createElement('a');
-      requestEdit.className = 'build-start-over';
+      const requestEdit = document.createElement('button');
+      requestEdit.className = 'btn-build';
+      requestEdit.style.width = '100%';
       requestEdit.textContent = 'request an edit →';
-      requestEdit.href = '#';
       requestEdit.addEventListener('click', (e) => {
-        e.preventDefault();
         e.target.closest('.build-row')?.remove();
         enterEditMode();
-      });
-
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('nerlo_pending_brief');
-        localStorage.removeItem('nerlo_chat');
-        localStorage.removeItem('nerlo_builder');
-        resetConversation();
       });
 
       row.appendChild(btn);
       row.appendChild(altLink);
       row.appendChild(requestEdit);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -2050,6 +2036,7 @@ Rules — no exceptions:
 
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn-build';
+      copyBtn.style.width = '100%';
       copyBtn.textContent = 'copy prompt';
       copyBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(payload.prompt).then(() => {
@@ -2058,12 +2045,11 @@ Rules — no exceptions:
         });
       });
 
-      const openLink = document.createElement('a');
-      openLink.className = 'build-alt';
+      const openLink = document.createElement('button');
+      openLink.className = 'btn-build';
+      openLink.style.width = '100%';
       openLink.textContent = 'open ' + toolLabel + ' →';
-      openLink.href = '#';
-      openLink.addEventListener('click', (e) => {
-        e.preventDefault();
+      openLink.addEventListener('click', () => {
         navigator.clipboard.writeText(payload.prompt);
         window.open(toolUrl, '_blank');
       });
@@ -2077,18 +2063,10 @@ Rules — no exceptions:
         enterImageTweakMode();
       });
 
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        resetConversation();
-      });
-
       if (payload.tool === 'flux') {
         const generateBtn = document.createElement('button');
         generateBtn.className = 'btn-build';
+        generateBtn.style.width = '100%';
         generateBtn.textContent = 'generate image →';
         generateBtn.addEventListener('click', () => {
           generateImage(payload.prompt, payload.ar, generateBtn);
@@ -2098,7 +2076,6 @@ Rules — no exceptions:
       row.appendChild(copyBtn);
       row.appendChild(openLink);
       row.appendChild(tweakLink);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -2164,6 +2141,7 @@ Rules — no exceptions:
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'btn-build';
+    copyBtn.style.width = '100%';
     copyBtn.textContent = 'copy prompt';
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(revised).then(() => {
@@ -2172,12 +2150,11 @@ Rules — no exceptions:
       });
     });
 
-    const openLink = document.createElement('a');
-    openLink.className = 'build-alt';
+    const openLink = document.createElement('button');
+    openLink.className = 'btn-build';
+    openLink.style.width = '100%';
     openLink.textContent = 'open ' + toolLabel + ' →';
-    openLink.href = '#';
-    openLink.addEventListener('click', (e) => {
-      e.preventDefault();
+    openLink.addEventListener('click', () => {
       navigator.clipboard.writeText(revised);
       window.open(toolUrl, '_blank');
     });
@@ -2191,18 +2168,10 @@ Rules — no exceptions:
       enterImageTweakMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetConversation();
-    });
-
     if (imagePayload.tool === 'flux') {
       const generateBtn = document.createElement('button');
       generateBtn.className = 'btn-build';
+      generateBtn.style.width = '100%';
       generateBtn.textContent = 'generate image →';
       generateBtn.addEventListener('click', () => {
         generateImage(imagePayload.prompt, imagePayload.ar, generateBtn);
@@ -2212,7 +2181,6 @@ Rules — no exceptions:
     row.appendChild(copyBtn);
     row.appendChild(openLink);
     row.appendChild(anotherTweak);
-    row.appendChild(startOver);
 
     if (imageTweakCount >= 3) {
       const warning = document.createElement('div');
@@ -2330,6 +2298,7 @@ Rules — no exceptions:
 
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn-build';
+      copyBtn.style.width = '100%';
       copyBtn.textContent = 'copy & open Suno →';
       copyBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(payload.prompt).then(() => {
@@ -2348,18 +2317,8 @@ Rules — no exceptions:
         enterAudioTweakMode();
       });
 
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        resetConversation();
-      });
-
       row.appendChild(copyBtn);
       row.appendChild(tweakLink);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -2423,6 +2382,7 @@ Rules — no exceptions:
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'btn-build';
+    copyBtn.style.width = '100%';
     copyBtn.textContent = 'copy & open Suno →';
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(revised).then(() => {
@@ -2441,18 +2401,8 @@ Rules — no exceptions:
       enterAudioTweakMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetConversation();
-    });
-
     row.appendChild(copyBtn);
     row.appendChild(anotherTweak);
-    row.appendChild(startOver);
 
     if (audioTweakCount >= 3) {
       const warning = document.createElement('div');
@@ -2502,6 +2452,7 @@ Rules — no exceptions:
 
       const generateBtn = document.createElement('button');
       generateBtn.className = 'btn-build';
+      generateBtn.style.width = '100%';
       generateBtn.textContent = 'generate sound →';
       generateBtn.addEventListener('click', () => {
         generateElevenLabsAudio('sfx', sfxPayload.prompt, null, generateBtn);
@@ -2516,18 +2467,8 @@ Rules — no exceptions:
         enterSfxTweakMode();
       });
 
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        resetConversation();
-      });
-
       row.appendChild(generateBtn);
       row.appendChild(tweakLink);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -2590,6 +2531,7 @@ Rules — no exceptions:
 
     const generateBtn = document.createElement('button');
     generateBtn.className = 'btn-build';
+    generateBtn.style.width = '100%';
     generateBtn.textContent = alreadyGenerated ? 'regenerate →' : 'generate sound →';
     generateBtn.addEventListener('click', () => {
       generateElevenLabsAudio('sfx', sfxPayload.prompt, null, generateBtn);
@@ -2604,18 +2546,8 @@ Rules — no exceptions:
       enterSfxTweakMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetConversation();
-    });
-
     row.appendChild(generateBtn);
     row.appendChild(anotherTweak);
-    row.appendChild(startOver);
 
     if (sfxTweakCount >= 3) {
       const warning = document.createElement('div');
@@ -2848,17 +2780,7 @@ Rules — no exceptions:
         enterVoiceTweakMode();
       });
 
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        resetConversation();
-      });
-
       row.appendChild(tweakLink);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -2928,17 +2850,7 @@ Rules — no exceptions:
       enterVoiceTweakMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetConversation();
-    });
-
     row.appendChild(anotherTweak);
-    row.appendChild(startOver);
 
     if (voiceTweakCount >= 3) {
       const warning = document.createElement('div');
@@ -3084,6 +2996,7 @@ Rules — no exceptions:
 
       const generateBtn = document.createElement('button');
       generateBtn.className = 'btn-build';
+      generateBtn.style.width = '100%';
       generateBtn.textContent = 'generate video →';
       generateBtn.addEventListener('click', () => {
         generateVideo(videoPayload.prompt, videoPayload.ratio, videoPayload.duration, generateBtn);
@@ -3098,18 +3011,8 @@ Rules — no exceptions:
         enterVideoTweakMode();
       });
 
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        resetConversation();
-      });
-
       row.appendChild(generateBtn);
       row.appendChild(tweakLink);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -3172,6 +3075,7 @@ Rules — no exceptions:
 
     const generateBtn = document.createElement('button');
     generateBtn.className = 'btn-build';
+    generateBtn.style.width = '100%';
     generateBtn.textContent = alreadyGenerated ? 'regenerate →' : 'generate video →';
     generateBtn.addEventListener('click', () => {
       generateVideo(videoPayload.prompt, videoPayload.ratio, videoPayload.duration, generateBtn);
@@ -3186,18 +3090,8 @@ Rules — no exceptions:
       enterVideoTweakMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetConversation();
-    });
-
     row.appendChild(generateBtn);
     row.appendChild(anotherTweak);
-    row.appendChild(startOver);
 
     if (videoTweakCount >= 3) {
       const warning = document.createElement('div');
@@ -3303,19 +3197,9 @@ Rules — no exceptions:
         enterAutomationTweakMode();
       });
 
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        resetConversation();
-      });
-
       row.appendChild(copyBtn);
       row.appendChild(openBtn);
       row.appendChild(tweakBtn);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -3390,19 +3274,9 @@ Rules — no exceptions:
       enterAutomationTweakMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetConversation();
-    });
-
     row.appendChild(copyBtn);
     row.appendChild(openBtn);
     row.appendChild(anotherTweak);
-    row.appendChild(startOver);
 
     if (automationTweakCount >= 3) {
       const warning = document.createElement('div');
@@ -3515,17 +3389,7 @@ Rules — no exceptions:
         enterWritingTweakMode();
       });
 
-      const startOver = document.createElement('a');
-      startOver.className = 'build-start-over';
-      startOver.textContent = 'start over with a new idea';
-      startOver.href = '#';
-      startOver.addEventListener('click', (e) => {
-        e.preventDefault();
-        resetConversation();
-      });
-
       row.appendChild(tweakBtn);
-      row.appendChild(startOver);
       innerEl.appendChild(row);
       scrollToBottom();
     }, 1000);
@@ -3641,17 +3505,7 @@ Rules — no exceptions:
       enterWritingTweakMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      resetConversation();
-    });
-
     row.appendChild(anotherTweak);
-    row.appendChild(startOver);
 
     if (writingTweakCount >= 3) {
       const warning = document.createElement('div');
@@ -3744,22 +3598,9 @@ Rules — no exceptions:
       enterEditMode();
     });
 
-    const startOver = document.createElement('a');
-    startOver.className = 'build-start-over';
-    startOver.textContent = 'start over with a new idea';
-    startOver.href = '#';
-    startOver.addEventListener('click', (e) => {
-      e.preventDefault();
-      localStorage.removeItem('nerlo_pending_brief');
-      localStorage.removeItem('nerlo_chat');
-      localStorage.removeItem('nerlo_builder');
-      resetConversation();
-    });
-
     row.appendChild(sendBtn);
     row.appendChild(pasteHint);
     row.appendChild(anotherEdit);
-    row.appendChild(startOver);
 
     if (editCount >= 3) {
       const warning = document.createElement('div');
